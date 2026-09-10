@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# 빌드 산출물
+build/
+DerivedData/
+
+# codegraph 인덱스(재생성 가능)
+.codegraph/
+
+# 내부 개발 문서 — 공개 저장소 비포함(CLAUDE.md 규칙 9)
+CLAUDE.md
+.ai-docs/
+
+# AI 재번역 모델 가중치(4.9GB · GitHub 파일 상한 초과) — 출처 문서만 버전 관리(RetransModel/MODEL_SOURCE.txt)
+RetransModel/*
+!RetransModel/MODEL_SOURCE.txt
+
+# Xcode 사용자별 상태
+xcuserdata/
+*.xcuserstate
+.swiftpm/

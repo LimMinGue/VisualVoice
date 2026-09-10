@@ -242,7 +242,7 @@ struct Session: Identifiable, Codable {
     }
 
     /// 표시용 날짜 — 저장된 문자열이 아니라 createdAt에서 파생. 구 세션(nil)은 '날짜 미상'으로 정직 표기.
-    /// (구 코드는 "오늘" 리터럴을 저장해 21건 전부 '오늘'로 표시됐다 — CLAUDE.md 날짜 결함.)
+    /// (구 코드는 "오늘" 리터럴을 저장해 21건 전부 '오늘'로 표시됐다 — 날짜 결함.)
     var displayDate: String { createdAt.map { Session.dateLabel(for: $0) } ?? "날짜 미상" }
     var isLegacyUndated: Bool { createdAt == nil }
 
@@ -277,7 +277,7 @@ struct Session: Identifiable, Codable {
 }
 
 /// 세션 영구 저장 — Application Support/VisualVoice/sessions.json (2026-07-17).
-/// ponytail: 전량 JSON 재기록 — 세션 수백 개 규모까지는 충분, 병목이 실측되면 개별 파일 분리.
+/// 단순화: 전량 JSON 재기록 — 세션 수백 개 규모까지는 충분, 병목이 실측되면 개별 파일 분리.
 enum SessionStore {
     private static var url: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -762,7 +762,7 @@ final class AppModel: ObservableObject {
 
         retransTask = Task(priority: .utility) { [weak self] in   // 실시간 STT 보호 — 낮은 QoS(§D)
             // 새 녹음 진행 중이면 착수 보류(폴링 대기) — 첫 자막 <1.5초 성역 보호.
-            // ponytail: 폴링 5초 — 일시정지/재개 스케줄러가 필요해지면 그때 승격.
+            // 단순화: 폴링 5초 — 일시정지/재개 스케줄러가 필요해지면 그때 승격.
             while let self, self.sessionState == .recording {
                 try? await Task.sleep(for: .seconds(5))
             }

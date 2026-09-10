@@ -6,7 +6,7 @@ import FluidAudio
 
 /// 마이크/시스템 오디오 → SpeechTranscriber(macOS 26 온디바이스) 실시간 전사 엔진.
 /// 무음 등으로 인식 스트림이 죽으면 자동 재시작해 세션을 이어간다(2026-07-17 실측 버그 수정).
-/// ponytail: 아직 TranscriptionSource 프로토콜 추상 없음 — WhisperKit(인니) 붙일 때 추출.
+/// 단순화: 아직 TranscriptionSource 프로토콜 추상 없음 — WhisperKit(인니) 붙일 때 추출.
 final class MicTranscriptionEngine {
 
     // 콜백 (오디오/백그라운드 스레드에서 호출될 수 있음 — 수신측에서 MainActor 홉)
@@ -93,7 +93,7 @@ final class MicTranscriptionEngine {
     private var gateOpenUntil = Date.distantPast
     /// 근접 발화만 받는 스트림(온라인 미팅의 '내 마이크') — 확정이 무조건 '나'라서 감도 확대가 곧 화자 오배정.
     /// ⚠️ 한계: Whisper 경로에만 적용된다. Apple 경로(한 단일·한↔영)는 게이트 자체가 없어(process의 .apple 분기)
-    /// 이 스트림도 무게이트다 — 그 조합의 화자 오배정은 별도 에픽(CLAUDE.md TODO 기록).
+    /// 이 스트림도 무게이트다 — 그 조합의 화자 오배정은 후속 과제.
     private var nearFieldOnly = false
     /// 창 무효화 세대 — 진행 중 전사가 옛 스냅샷 좌표로 트림·발신하는 것을 차단 (whisperLock 보호).
     private var audioGeneration = 0
@@ -173,7 +173,7 @@ final class MicTranscriptionEngine {
     private static func loadWhisperPipe(model: String, onStatus: ((String) -> Void)?) async throws -> WhisperKit {
         // 캐시가 있으면 modelFolder 직접 지정으로 로컬 로드(네트워크 0회 — 오프라인 동작).
         // WhisperKit(model:)만 쓰면 캐시가 있어도 매번 허깅페이스 파일 목록을 조회해
-        // 오프라인에서 세션 시작 자체가 실패한다(2026-07-17 패키지 소스 실측 · 위원회 확정).
+        // 오프라인에서 세션 시작 자체가 실패한다(2026-07-17 패키지 소스 실측 확정).
         let cachedFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-\(model)")
         let hasCache = FileManager.default.fileExists(atPath: cachedFolder.path)
@@ -318,7 +318,7 @@ final class MicTranscriptionEngine {
             audioEngine.prepare()
             try audioEngine.start()
             // 구성 변경(입력 장치 전환·샘플레이트 변경 등)으로 엔진이 스스로 멈추는 경우 자동 재기동
-            // ponytail: 옵서버 블록이 @Sendable이라 non-Sendable self 캡처에 Swift 6 경고 1건 잔존 —
+            // 단순화: 옵서버 블록이 @Sendable이라 non-Sendable self 캡처에 Swift 6 경고 1건 잔존 —
             // 근본 해결은 엔진 전체를 @MainActor로 격리하는 대규모 마이그레이션. 실사용 경로라 지금은 defer
             // (kickAudio는 main에서만·재진입 가드 2초로 안전). 락 6건(→Swift 6 에러)은 withLock으로 해소 완료.
             NotificationCenter.default.addObserver(
@@ -607,8 +607,8 @@ final class MicTranscriptionEngine {
             }
             // Route A(오버랩 포스트롤 — decisions §8): 전사한 창 전량이 아니라 '마지막 렌더 세그먼트 끝'까지만
             // 비우고, 그 이후 미렌더 꼬리(=다음 발화 어두)를 다음 창에 남긴다 → 경계 침범(첫 단어 삼킴) 방지.
-            // 렌더된 부분만 지우므로 경계 단어 중복이 구조적으로 없음(위원회 dedup 조건 by construction 충족).
-            // ponytail: 꼬리 보존 상한 2초(무음 꼬리 통째 보존·창 무한 성장 차단) — 소프트 변수 (경계_오버랩).
+            // 렌더된 부분만 지우므로 경계 단어 중복이 구조적으로 없음(dedup 조건 by construction 충족).
+            // 단순화: 꼬리 보존 상한 2초(무음 꼬리 통째 보존·창 무한 성장 차단) — 소프트 변수 (경계_오버랩).
             // 신뢰 세그 0 또는 렌더가 창 전체를 덮으면 종전대로 전량 비움 폴백.
             let renderedSamples = Int(lastRenderedEnd * 16000)
             let removeCount = (renderedSamples > 0 && renderedSamples < samples.count)
@@ -634,7 +634,7 @@ final class MicTranscriptionEngine {
     /// 무음·소음에서 나오는 위스퍼 단골 환각 문구(유튜브 마무리 멘트 학습 잔재).
     /// 정규화(소문자·기호 제거) 후 **완전 일치만** 폐기 — 부분 일치 금지(진짜 발화 "감사합니다, 시작하죠" 보호).
     /// "terima kasih" 단독 등 실대화 표현은 절대 수록 금지(언어학자 검토).
-    /// ponytail: 실측에서 새 문구가 확인될 때만 추가. 파일 전사 모드 도입 시 모드별 예외 재검토.
+    /// 단순화: 실측에서 새 문구가 확인될 때만 추가. 파일 전사 모드 도입 시 모드별 예외 재검토.
     private static let stockHallucinations: Set<String> = [
         // 인니·말레이
         "terimakasihkeranamenonton", "terimakasihsudahmenonton",
@@ -744,7 +744,7 @@ final class MicTranscriptionEngine {
     ///
     /// 유효 0.6초 = 분류 hop 0.375초 + 스케줄 지터 여유. 발화 중엔 hop마다 갱신돼 연속 유지되고,
     /// 발화가 끝나면 0.6초 안에 닫힌다 — 잔상이 길수록 ①무음 꼬리가 발화량을 채워 '사람 말 0초' 창이
-    /// 전사에 투입되고(환각 재발) ②silentFor 기산점이 밀려 문장 확정이 늦어진다(적대적 검증 지적 2건).
+    /// 전사에 투입되고(환각 재발) ②silentFor 기산점이 밀려 문장 확정이 늦어진다(검증 지적 2건).
     /// 잠깐의 문장 중 쉼으로 게이트가 닫혀도 프리롤 1초 링이 어두를 보존한다.
     private func speechDetected(rms: Float) -> Bool {
         guard rms > silenceFloor else { return false }   // 음소거·무신호는 어느 경로든 게이트 닫힘
@@ -759,7 +759,7 @@ final class MicTranscriptionEngine {
     /// 토글은 탭 입력만 끊어서, 이미 쌓인 창이 뒤늦게 전사돼 꺼짐 표시 상태에서 '나' 자막이
     /// 새로 뜨던 문제를 차단한다(민감한 대화 전에 끄는 용도라 정직성이 곧 기능).
     /// 세대를 올려 **이미 전사 중인 틱의 결과까지** 무효화한다 — 버퍼만 비우면 in-flight 전사가
-    /// 완주해 그대로 자막을 발신한다(적대적 검증 지적). 가설 변수는 건드리지 않는다: 메인 스레드에서
+    /// 완주해 그대로 자막을 발신한다(검증 지적). 가설 변수는 건드리지 않는다: 메인 스레드에서
     /// 쓰면 whisperTick과 락 없는 경합이 되고, 잠정 줄 정리는 이미 toggleMicCapture가 UI에서 한다.
     func discardPendingAudio() {
         whisperLock.withLock {
@@ -879,7 +879,7 @@ final class MicTranscriptionEngine {
                     if voiced, (speechClassifierReady && !nearFieldOnly) || rms > 0.17 {
                         whisperLoudSeconds += Double(out.frameLength) / analyzerFormat.sampleRate
                     }
-                    // ponytail: 창 상한 30초. 전사가 행(hang)하거나 공유 락 경쟁으로 틱이 트림에 도달하지
+                    // 단순화: 창 상한 30초. 전사가 행(hang)하거나 공유 락 경쟁으로 틱이 트림에 도달하지
                     // 못하는 동안 창이 무한 성장하던 경로 차단(메모리·전사 비용이 서로를 키우는 되먹임).
                     // 행 자체의 복구(전사 타임아웃·엔진 재시작)는 미구현 — 실사용에서 행이 관측되면 승격.
                     if whisperSamples.count > 16000 * 30 {

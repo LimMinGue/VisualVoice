@@ -134,7 +134,7 @@ enum SessionExporter {
     /// 최상위 화면에서 공유 시트 표시 — iPad는 팝오버 앵커 필수(없으면 크래시).
     @MainActor
     private static func presentShareSheet(for url: URL) {
-        // ponytail: 내보내기 시트 dismiss 애니메이션과의 경합 회피 — 0.6초 뒤 최상위 VC 탐색
+        // 단순화: 내보내기 시트 dismiss 애니메이션과의 경합 회피 — 0.6초 뒤 최상위 VC 탐색
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             guard let scene = UIApplication.shared.connectedScenes
                     .compactMap({ $0 as? UIWindowScene })

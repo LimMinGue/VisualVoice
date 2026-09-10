@@ -28,8 +28,8 @@ struct VisualEffectBackground: NSViewRepresentable {
 }
 
 /// 플로팅 항상-위 패널 창 설정 — decisions.md §5·§6.
-/// 창 알파는 항상 1.0 — 불투명도 슬라이더는 배경 딤에만 적용(자막 텍스트는 절대 투명해지지 않음, 2026-07-17 위원회 치명 결함 수정).
-/// ponytail: 완전 무테두리·둥근 모서리 커스텀 창은 후속 다듬기. 지금은 hiddenTitleBar + floating으로 충분.
+/// 창 알파는 항상 1.0 — 불투명도 슬라이더는 배경 딤에만 적용(자막 텍스트는 절대 투명해지지 않음, 2026-07-17 치명 결함 수정).
+/// 단순화: 완전 무테두리·둥근 모서리 커스텀 창은 후속 다듬기. 지금은 hiddenTitleBar + floating으로 충분.
 struct WindowConfigurator: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = NSView()

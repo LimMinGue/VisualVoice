@@ -37,7 +37,7 @@ final class TranslationCoordinator: ObservableObject {
         // .highFidelity = Apple Intelligence 기반 '더 유창한' 번역(vs .lowLatency 전통 MT).
         // 워게임 2026-07-19: 실시간 문맥 창은 Apple Translation에 문맥 API가 없어 불가 → 실시간에서 가능한
         // 유일한 품질 레버가 이 전략 전환(§11.1 개정). init(preferredStrategy:)는 26.4+ → 미만/미지원 언어쌍은 기본 폴백.
-        // ponytail: 지연이 문제로 실측되면 이 분기를 제거해 기본 전략으로 되돌린다.
+        // 단순화: 지연이 문제로 실측되면 이 분기를 제거해 기본 전략으로 되돌린다.
         if #available(macOS 26.4, iOS 26.4, *) {
             configAtoB = .init(source: aLang, target: bLang, preferredStrategy: .highFidelity)
             configBtoA = .init(source: bLang, target: aLang, preferredStrategy: .highFidelity)

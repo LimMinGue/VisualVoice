@@ -80,7 +80,7 @@ struct HomeView: View {
 
                 HStack(spacing: 8) {
                     Text("엔진 자동").font(.system(size: 13, weight: .semibold))
-                    // "ANE" 표기는 decisions §2가 정정한 표현 — "온디바이스"로 통일(위원회 2026-07-17)
+                    // "ANE" 표기는 decisions §2가 정정한 표현 — "온디바이스"로 통일(2026-07-17)
                     Text("온디바이스").font(.system(size: 10, weight: .heavy, design: .rounded))
                         .foregroundStyle(Theme.accent)
                         .padding(.horizontal, 6).padding(.vertical, 2)
@@ -230,7 +230,7 @@ struct HomeView: View {
                 Text(session.preview).font(.system(size: 11.5)).foregroundStyle(Theme.ink3).lineLimit(1)
             }
             Spacer()
-            // 자리 상시 예약 + 투명도 전환 — 호버 시 우측 메타가 밀리는 레이아웃 점프 제거(위원회 2026-07-17)
+            // 자리 상시 예약 + 투명도 전환 — 호버 시 우측 메타가 밀리는 레이아웃 점프 제거(2026-07-17)
             Button { pendingDelete = session } label: {
                 Image(systemName: "trash")
                     .font(.system(size: isPad ? 14 : 11, weight: .semibold))

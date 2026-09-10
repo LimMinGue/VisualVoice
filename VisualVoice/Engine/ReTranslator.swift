@@ -10,7 +10,7 @@ import Tokenizers   // #huggingFaceTokenizerLoader 매크로 전개가 참조
 /// L번호(JSON id) 1:1 매칭 · 불일치 줄만 미적용 · temp 0 · 존댓말/고유명사 프롬프트 · 배치 분할 · 취소 지원.
 enum ReTranslator {
 
-    /// 앱 번들 리소스의 모델 폴더(파란 폴더 참조). ponytail: 모델 스왑은 이 폴더 교체 1곳 — 코드 무관(§11.4 Gemma 잠정).
+    /// 앱 번들 리소스의 모델 폴더(파란 폴더 참조). 단순화: 모델 스왑은 이 폴더 교체 1곳 — 코드 무관(§11.4 Gemma 잠정).
     static let bundledModelFolder = "RetransModel"
 
     struct Outcome {
@@ -20,7 +20,7 @@ enum ReTranslator {
         var failed = 0                       // 배치 통째 실패로 실시간본에 남은 줄 수
     }
 
-    /// 배치 상한 — gemma2 컨텍스트(8K) 내 안전선. ponytail: 토큰 추정 대신 줄 수 고정, 실측 오버플로 시 조정.
+    /// 배치 상한 — gemma2 컨텍스트(8K) 내 안전선. 단순화: 토큰 추정 대신 줄 수 고정, 실측 오버플로 시 조정.
     private static let batchSize = 30
     private static let contextLines = 3   // 배치 앞에 붙이는 직전 대화(참고용 — 생략 주어·지시어 복원)
 

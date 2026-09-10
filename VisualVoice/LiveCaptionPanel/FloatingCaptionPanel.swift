@@ -31,7 +31,7 @@ struct FloatingCaptionPanel: View {
             CaptionStreamView(lines: app.visibleLiveLines, compact: true)
                 .padding(.horizontal, 12).padding(.vertical, 10)
             Rectangle().fill(Theme.hair).frame(height: 1)
-            // 미니 컨트롤바 — §6 "글자 크기·배경 불투명도 상시 노출" 규약 충족 (2026-07-17 위원회 수정)
+            // 미니 컨트롤바 — §6 "글자 크기·배경 불투명도 상시 노출" 규약 충족 (2026-07-17 수정)
             HStack(spacing: 8) {
                 Button { settings.fontScale = max(0.7, settings.fontScale - 0.1) } label: {
                     Text("A−").font(.system(size: 10.5, weight: .semibold, design: .rounded))

@@ -135,7 +135,7 @@ struct CaptionLineView: View {
                             .foregroundStyle(Theme.ink3)
                             .help("타이핑 발화")
                     }
-                    // 치환 규칙은 확정 줄에만·렌더 시점에만(원문 불변 · 잠정 줄은 깜빡임 방지 — 2026-09-11 B⑤ 위원회 조율)
+                    // 치환 규칙은 확정 줄에만·렌더 시점에만(원문 불변 · 잠정 줄은 깜빡임 방지 — 2026-09-11 B⑤)
                     Text(line.isVolatile ? line.source : settings.display(line.source))
                         .font(.system(size: srcSize, weight: line.isVolatile ? .semibold : .regular))
                         .foregroundStyle(line.isVolatile ? Theme.ink : Theme.ink.opacity(0.75))   // 확정 톤 0.64→0.75 (AA 마진 확보)
@@ -219,7 +219,7 @@ struct SpeakerChip: View {
             )
         )
         .padding(.top, 2)
-        // "클릭해 정정" 안내는 정정 팝오버 배선(로직 단계) 후에만 — 거짓 안내 금지(위원회·Council 2026-07-17)
+        // "클릭해 정정" 안내는 정정 팝오버 배선(로직 단계) 후에만 — 거짓 안내 금지(2026-07-17)
         .help(uncertain ? "화자 추정 불확실" : speaker.label)
     }
 }

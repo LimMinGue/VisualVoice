@@ -4,7 +4,7 @@ import Foundation
 /// 본문은 `SessionExporter.text(markdown:true)`를 그대로 중간표현으로 재사용한다 — 기존 TXT/MD/PDF
 /// 빌더는 한 줄도 건드리지 않고, 마크다운 접두어(`#`/`##`/`- ` 등)만 Word 문단 스타일로 매핑한다.
 /// ZIP은 store(무압축)+CRC32 손구현 — macOS에 공개 ZIP 쓰기 API가 없고 NSFileCoordinator는 항목을
-/// 폴더 아래로 중첩시켜 OOXML 루트 규약에 못 맞으므로(위원회 2026-07-18).
+/// 폴더 아래로 중첩시켜 OOXML 루트 규약에 못 맞으므로(2026-07-18).
 enum DocxWriter {
 
     /// 마크다운 문자열 → .docx 바이트.
@@ -53,7 +53,7 @@ enum DocxWriter {
     }
 
     /// <w:p> 한 문단 — 스타일별 크기·굵기·색·들여쓰기를 인라인 속성으로 (별도 styles.xml 불필요).
-    /// ponytail: 진짜 리스트 넘버링(numbering.xml)은 무의존 유지 위해 • 글머리 글자로 대체.
+    /// 단순화: 진짜 리스트 넘버링(numbering.xml)은 무의존 유지 위해 • 글머리 글자로 대체.
     private static func paragraph(_ text: String, style: Style?) -> String {
         var pPr = "", rPr = "", bullet = ""
         switch style {
@@ -182,7 +182,7 @@ enum Zip {
         return out
     }
 
-    /// CRC32 (ISO 3309 / ZIP 표준, 반사 다항식 0xEDB88320). ponytail: 비트별 계산 — 내보내기는
+    /// CRC32 (ISO 3309 / ZIP 표준, 반사 다항식 0xEDB88320). 단순화: 비트별 계산 — 내보내기는
     /// 일회성 사용자 액션이라 룩업 테이블 불필요(수백 KB에도 <10ms).
     static func crc32(_ data: Data) -> UInt32 {
         var crc: UInt32 = 0xFFFFFFFF

@@ -2,14 +2,14 @@
 import Foundation
 import AVFoundation
 
-/// 실시간 경로 헤드리스 하네스 (2026-09-11 · decisions §15.5-C②③).
+/// 실시간 경로 헤드리스 검증 도구.
 ///
 /// 앱을 `VV_PROBE_FILE=<오디오 경로>` 환경변수로 띄우면 창 없이 `MicTranscriptionEngine`에 파일을 **마이크 탭처럼 실시간 속도로 주입**해
 /// 확정 자막을 stdout으로 찍고 종료한다. 게이트·창·확정 판정 코드를 그대로 지나므로(재현이 아니라 실물),
-/// 커밋 정책·분절 규칙을 바꿀 때 무갭 자산(05·06)과 실대화 자산(04)의 회귀를 같은 코드로 잰다.
+/// 커밋 정책·분절 규칙을 바꿀 때 무갭 오디오 자산과 실대화 오디오 자산의 회귀를 같은 코드로 잰다.
 /// 라이브 경로는 한 줄도 수정하지 않는다 — 주입 소스(`Source.injected`)와 `feed()` 진입점만 추가.
 ///
-/// 실행: VV_PROBE_FILE=.ai-docs/testkit/05_무갭_화자전환.m4a VV_PROBE_LANGS=ko,id build/dd/.../VisualVoice
+/// 실행: VV_PROBE_FILE=<오디오 파일 경로> VV_PROBE_LANGS=ko,id build/dd/.../VisualVoice
 enum WindowProbe {
     static func runIfRequested() {
         let env = ProcessInfo.processInfo.environment

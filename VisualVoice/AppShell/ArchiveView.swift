@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 기록 보관함 — 전체 세션 카드 리스트 + 전문 검색 (decisions §5 · 목업 컨펌 2026-07-18).
+/// 기록 보관함 — 전체 세션 카드 리스트 + 전문 검색.
 /// 클릭 → 기존 SessionDetailView(openDetail) · 삭제 → 확인 다이얼로그(기존 패턴 재사용).
 struct ArchiveView: View {
     @EnvironmentObject var app: AppModel

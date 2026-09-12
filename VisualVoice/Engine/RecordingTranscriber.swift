@@ -1,7 +1,7 @@
 import Foundation
 import WhisperKit
 
-/// 녹음 재전사 (2026-09-11 · decisions §15.5-B④) — §14.1이 정의한 분석 루프
+/// 녹음 재전사 — 분석 루프
 /// "녹음 → 더 큰 STT로 정답 대본 → 앱 자막과 대조"를 앱 안에서 닫는다.
 ///
 /// 게이트·0.45초 틱·잠정 없이 **파일 통짜 전사**(WhisperKit 장문 VAD 청킹) — 라이브가 놓친 발화가 무엇인지 그대로 드러난다.
@@ -27,7 +27,7 @@ enum RecordingTranscriber {
     }
 
     /// 원음 1부 전부(온라인 미팅=시스템+마이크 2파일, 대면=마이크 1파일)를 전사해 시각순으로 합친다.
-    /// 마이크 스트림 줄은 온라인 미팅에서만 '나'(§12 규약과 동일), 대면 대화의 마이크는 화자 미상.
+    /// 마이크 스트림 줄은 온라인 미팅에서만 '나', 대면 대화의 마이크는 화자 미상.
     static func run(session: Session, pair: LanguagePair, dual: Bool,
                     onStatus: @MainActor @escaping (String) -> Void) async throws -> Outcome {
         let raws = SessionRecorder.items(for: session.id).filter {
@@ -50,9 +50,9 @@ enum RecordingTranscriber {
             var results: [TranscriptionResult]
             do { results = try await pipe.transcribe(audioArray: samples, decodeOptions: options) }
             catch { throw Failure.transcribe("\(error)") }
-            // 쌍 클램프(라이브 `whisperTick`과 같은 규약 — decisions §2): 자동 감지가 쌍 밖(영어·중국어 등)으로 샌 청크는
+            // 쌍 클램프(라이브 `whisperTick`과 같은 규약): 자동 감지가 쌍 밖(영어·중국어 등)으로 샌 청크는
             // 직전 유효 언어(대화 관성) 또는 언어 1로 그 구간만 재전사. 2026-09-11 실측: 클램프 없이 통짜 전사하면
-            // 한·인니가 한 줄에 섞이고 파편("-"·"B.J.L.")이 늘어 '정답 대본'이 라이브보다 나빠졌다(8/9 세션 726자 vs 1253자).
+            // 한·인니가 한 줄에 섞이고 파편("-"·"B.J.L.")이 늘어 '정답 대본'이 라이브보다 나빠졌다(실측 세션 726자 vs 1253자).
             if !pair.isSingle {
                 let allowed = Set([pair.a.code, pair.b.code])
                 var sticky = pair.a.code

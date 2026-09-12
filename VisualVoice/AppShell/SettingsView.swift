@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// 설정 화면 — 기존 PanelSettings 표면화 + 영속화 (decisions §5·§6 · 목업 컨펌 2026-07-18).
+/// 설정 화면 — 기존 PanelSettings 표면화 + 영속화.
 /// v1 범위: 표시(밀도·글자크기·불투명도·이중표기) + 자막 패널(창 가림 자동표시).
 /// 고대비·엔진 오버라이드·언어팩은 백엔드 필요한 별도 후속 — 가짜 행 금지(거짓 안내 방지).
 struct SettingsView: View {
     @EnvironmentObject var settings: PanelSettings
     @State private var recordingBytes: Int64 = 0   // 디렉터리 조회 1회 — 매 렌더가 아니라 화면 진입 시
-    @State private var newFrom = ""                // 치환 규칙 추가 행(2026-09-11 B⑤)
+    @State private var newFrom = ""                // 치환 규칙 추가 행
     @State private var newTo = ""
     @State private var newWholeWord = true
 
@@ -49,7 +49,7 @@ struct SettingsView: View {
                     }
                 }
 
-                // LocalAgreement(C② · 2026-09-11) — 하네스 합격(04 무회귀·05 무갭 1줄→4줄) 후 제작자 실사용 판정용 실험 토글.
+                // LocalAgreement — 회귀 테스트 합격(04 무회귀·05 무갭 1줄→4줄) 후 실사용 판정용 실험 토글.
                 group("인식 (실험)") {
                     row("쉼 없이 이어지는 말을 문장 단위로 먼저 확정",
                         "두 사람이 쉼 없이 주고받을 때 앞 문장을 먼저 확정해 한 줄로 뭉치거나 언어가 섞이는 것을 줄입니다. 인도네시아어(Whisper) 경로에만 적용되며, 다음 세션부터 반영됩니다. 이상하면 끄세요.") {
@@ -57,7 +57,7 @@ struct SettingsView: View {
                     }
                 }
 
-                // 세션 음원 녹음 (decisions §14 · 목업 컨펌 2026-07-30) — 자동 삭제·보관 기간은 두지 않는다.
+                // 세션 음원 녹음 — 자동 삭제·보관 기간은 두지 않는다.
                 // 분석하려던 증거를 앱이 먼저 지워버리는 일을 막고, 대신 사용량을 항상 보여준다.
                 group("녹음") {
                     row("세션 음원 저장",
@@ -76,7 +76,7 @@ struct SettingsView: View {
                     }
                 }
 
-                // 치환 규칙(2026-09-11 B⑤ · SpectaLing '치환' 대응) — 표시·내보내기 시점에만, 저장 원문은 불변.
+                // 치환 규칙 — 표시·내보내기 시점에만, 저장 원문은 불변.
                 group("치환 규칙") {
                     row("자주 틀리는 말 바로잡기",
                         "인식기가 자주 틀리는 이름·브랜드·전문용어를 화면과 내보내기에서 바로잡습니다. 위에서 아래 순서로 적용되고, 저장된 원문은 그대로 둡니다(녹취록 줄에 마우스를 올리면 원문 확인).") {
@@ -132,7 +132,7 @@ struct SettingsView: View {
         newFrom = ""; newTo = ""
     }
 
-    // ── 재사용 헬퍼 (규칙 4: 반복 UI 단일화) ──
+    // ── 재사용 헬퍼 (반복 UI 단일화) ──
     private func group<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label).font(.system(size: 11, weight: .bold, design: .rounded))

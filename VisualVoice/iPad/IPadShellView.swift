@@ -1,7 +1,7 @@
-#if os(iOS)  // iPad 전용 소스 — iPad/ 폴더로 분리 (제작자 지시 2026-07-19)
+#if os(iOS)  // iPad 전용 소스 — iPad/ 폴더로 분리
 import SwiftUI
 
-/// iPad 셸 — NavigationSplitView(가로=사이드바 병렬 · 세로=☰ 오버레이) (decisions §10 · 목업 컨펌 2026-07-18).
+/// iPad 셸 — NavigationSplitView(가로=사이드바 병렬 · 세로=☰ 오버레이).
 /// 화면 뷰(홈/라이브/상세/보관함/설정)와 사이드바는 macOS와 공용 — 셸 래퍼만 iPad 전용,
 /// macOS 커스텀 셸(AppShellView)은 불변(회귀 0).
 struct IPadShellView: View {
@@ -33,7 +33,7 @@ struct IPadShellView: View {
             }
         }
         .foregroundStyle(Theme.ink)
-        .preferredColorScheme(.dark)   // 다크 단일 테마 고정 (decisions §6) — 시스템 시트·메뉴·다이얼로그까지 다크
+        .preferredColorScheme(.dark)   // 다크 단일 테마 고정 — 시스템 시트·메뉴·다이얼로그까지 다크
     }
 }
 #endif

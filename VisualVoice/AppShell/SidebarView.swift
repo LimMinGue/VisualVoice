@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 왼쪽 사이드바 — 이력 + 기능 이동 (decisions.md §5, SpectaLing·ALT 참조).
+/// 왼쪽 사이드바 — 이력 + 기능 이동.
 /// 사이드바 경과 시간 — metrics만 관찰 (사이드바 전체 재렌더 방지)
 struct SidebarElapsed: View {
     @ObservedObject var metrics: LiveMetrics
@@ -39,7 +39,7 @@ struct SidebarView: View {
             }
             .buttonStyle(.plain)
 
-            // 라이브 이탈 시 상시 복귀 경로 — "녹음이 사라졌다" 착각 방지 (워게임 '치명' 해소)
+            // 라이브 이탈 시 상시 복귀 경로 — "녹음이 사라졌다" 착각 방지
             if app.sessionState != .idle && app.screen != .live {
                 Button { app.screen = .live } label: {
                     HStack(spacing: 7) {
@@ -71,7 +71,7 @@ struct SidebarView: View {
                 ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 1) {
                 ForEach(app.sessions) { session in
-                    // 진짜 Button — onTapGesture 행은 VoiceOver·접근성 API가 누를 수 없었다(2026-09-11 §15.3 a11y 대등→개선)
+                    // 진짜 Button — onTapGesture 행은 VoiceOver·접근성 API가 누를 수 없었다(2026-09-11 접근성 개선)
                     Button { app.openDetail(session) } label: {
                         HStack(alignment: .top, spacing: 9) {
                             Circle().fill(session.dotColor).frame(width: 8, height: 8).padding(.top, 5)

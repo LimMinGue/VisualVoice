@@ -13,7 +13,7 @@ struct MeetingMinutes: Equatable, Codable {
     struct Item: Equatable, Codable {
         var text: String
         var who: String = ""
-        var sourceTimecodes: [String] = []   // 비어 있으면 UI가 '확인 필요' 표시 (QC 규약)
+        var sourceTimecodes: [String] = []   // 비어 있으면 UI가 '확인 필요' 표시
     }
     struct Participant: Equatable, Codable {
         var speakerLabel: String   // 화자 칩 라벨 ("나"/"상대 1")
@@ -34,7 +34,7 @@ extension MeetingMinutes.Participant {
         return !n.isEmpty && !n.contains("미상")
     }
     /// 표시·내보내기 공용 값 — 이름을 못 맞힌 자리는 추정값(역할·소속=detail)을 시드, 둘 다 없으면 화자 라벨.
-    /// (2026-07-18 제작자 지시: 추정 배지 제거·정정만, decisions §6 개정)
+    /// (2026-07-18 UI 확정: 추정 배지 없이 정정만 제공)
     var displayName: String { hasKnownName ? name : (detail.isEmpty ? speakerLabel : detail) }
     /// 역할·소속 접미사 표기 여부 — 이름을 맞혔고 detail이 있고 이름과 다를 때만.
     /// name==detail(사용자가 역할을 이름으로 확정한 경우)이면 "역할 · 역할" 중복을 막는다(검증 확증).
@@ -74,10 +74,10 @@ private struct GenNotes {
 }
 
 /// 회의록 자동 생성 — 온디바이스 FoundationModels.
-/// 스파이크 실측(wargame [2026-07-17]_wargame_llm_refinement §0): 요약 합격권 · 인니어 미지원 · 문장 교정 불합격.
+/// 실측(2026-07-17): 요약 합격권 · 인니어 미지원 · 문장 교정 불합격.
 enum MinutesGenerator {
     static func generate(from lines: [CaptionLine]) async -> MinutesState {
-        // 가용성 사유 3종 분기(2026-09-11 B⑥ — SDK 인터페이스 실측) — 사용자가 고칠 수 있는 문제는 고치는 법까지.
+        // 가용성 사유 3종 분기(2026-09-11 SDK 인터페이스 실측) — 사용자가 고칠 수 있는 문제는 고치는 법까지.
         switch SystemLanguageModel.default.availability {
         case .available: break
         case .unavailable(.appleIntelligenceNotEnabled):
@@ -118,7 +118,7 @@ enum MinutesGenerator {
                     participants.append(.init(speakerLabel: p.speakerLabel, name: p.name, detail: p.detail))
                 }
             } catch {
-                // 개별 청크 실패(가드레일 거부 등)가 전체를 막지 않게 — 해당 구간만 표기 (wargame #9)
+                // 개별 청크 실패(가드레일 거부 등)가 전체를 막지 않게 — 해당 구간만 표기
                 NSLog("VV minutes: 청크 생성 실패 — %@", error.localizedDescription)
                 summaries.append("(이 구간 정리 실패 — 녹취록 참조)")
             }

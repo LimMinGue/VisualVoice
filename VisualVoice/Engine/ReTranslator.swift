@@ -4,19 +4,19 @@ import MLXLMCommon
 import MLXHuggingFace
 import Tokenizers   // #huggingFaceTokenizerLoader 매크로 전개가 참조
 
-/// 종료 후 AI 재번역 — 앱 내장 MLX LLM (decisions §11.4: 단일 앱·모델 번들·직접 번역).
+/// 종료 후 AI 재번역 — 앱 내장 MLX LLM (단일 앱·모델 번들·직접 번역).
 /// 실시간 translation은 절대 불변(조용한 고쳐쓰기 금지) — 결과는 줄별 refinedTranslation 딕셔너리로만 반환.
-/// 워게임 `[2026-07-19]_wargame_postsession_llm_retranslation.md` §B·§D 확정 규약 구현:
+/// 확정 규약:
 /// L번호(JSON id) 1:1 매칭 · 불일치 줄만 미적용 · temp 0 · 존댓말/고유명사 프롬프트 · 배치 분할 · 취소 지원.
 enum ReTranslator {
 
-    /// 앱 번들 리소스의 모델 폴더(파란 폴더 참조). 단순화: 모델 스왑은 이 폴더 교체 1곳 — 코드 무관(§11.4 Gemma 잠정).
+    /// 앱 번들 리소스의 모델 폴더(파란 폴더 참조). 단순화: 모델 스왑은 이 폴더 교체 1곳 — 코드 무관(Gemma 잠정).
     static let bundledModelFolder = "RetransModel"
 
     struct Outcome {
         var refined: [UUID: String] = [:]   // 줄 id → AI 재번역문 (id 매칭이라 오배정 불가)
         var state: RefinementState = .ready
-        var attempted = 0                    // 시도 줄 수 — 부분 실패 N/M 정직 표기(2026-09-11 §15.3 ④), 영속은 notes로
+        var attempted = 0                    // 시도 줄 수 — 부분 실패 N/M 정직 표기, 영속은 notes로
         var failed = 0                       // 배치 통째 실패로 실시간본에 남은 줄 수
     }
 
@@ -41,7 +41,7 @@ enum ReTranslator {
         }
         let container: ModelContainer
         do {
-            // 번들 로컬 디렉터리 로드 — Downloader 불요(네트워크 0회, §11.4 단일 앱 원칙)
+            // 번들 로컬 디렉터리 로드 — Downloader 불요(네트워크 0회 — 단일 앱 원칙)
             container = try await loadModelContainer(from: modelDir, using: #huggingFaceTokenizerLoader())
         } catch {
             NSLog("VV retrans: 모델 로드 실패 — %@", "\(error)")
@@ -80,7 +80,7 @@ enum ReTranslator {
 
     private static func translateBatch(_ batch: [CaptionLine], context: [CaptionLine],
                                        pair: LanguagePair, container: ModelContainer) async throws -> [(UUID, String)] {
-        // 줄별 타깃 = 소스의 반대 언어(§D 방향별 정책 — '전량 1패스'는 방향 무시가 아님)
+        // 줄별 타깃 = 소스의 반대 언어(방향별 정책 — '전량 1패스'는 방향 무시가 아님)
         struct Item { let n: Int; let line: CaptionLine; let target: String }
         let items = batch.enumerated().map { i, line in
             let src = TranslationCoordinator.detectLanguage(of: line.source, between: pair)
@@ -118,7 +118,7 @@ enum ReTranslator {
             var text = ""
             let stream = try MLXLMCommon.generate(
                 input: input,
-                parameters: GenerateParameters(maxTokens: 3000, temperature: 0),   // temp 0 — 재현성(§D)
+                parameters: GenerateParameters(maxTokens: 3000, temperature: 0),   // temp 0 — 재현성
                 context: modelContext)
             for await gen in stream {
                 if let chunk = gen.chunk { text += chunk }
@@ -137,7 +137,7 @@ enum ReTranslator {
         for obj in arr {
             guard let n = (obj["n"] as? Int) ?? Int("\(obj["n"] ?? "")"),
                   let t = obj["t"] as? String,
-                  let item = items.first(where: { $0.n == n }) else { continue }   // 불일치 줄만 미적용(§D)
+                  let item = items.first(where: { $0.n == n }) else { continue }   // 불일치 줄만 미적용
             let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
             result.append((item.line.id, trimmed))

@@ -1,15 +1,15 @@
 import Foundation
 
-/// 치환 규칙 — 인식기가 자주 틀리는 이름·브랜드·전문용어를 **표시·내보내기 시점에** 바로잡는다(2026-09-11 · §15.5-B⑤).
+/// 치환 규칙 — 인식기가 자주 틀리는 이름·브랜드·전문용어를 **표시·내보내기 시점에** 바로잡는다(2026-09-11).
 ///
-/// 저장된 원문(`CaptionLine.source`)은 절대 바꾸지 않는다 — §7 원문 보존, 그리고 §14 녹음 재전사 대조의
-/// 기준선이 오염되면 분석 루프 자체가 무의미해진다. 확정 경로(`applyFinal`)·잠정 줄에도 넣지 않는다(§8 재발명 금지·깜빡임).
-/// 엔진 레벨 어휘 주입(contextualStrings)은 Apple 경로 미지원이라 후처리 치환이 유일한 레버(decisions §2 사투리 항목).
+/// 저장된 원문(`CaptionLine.source`)은 절대 바꾸지 않는다 — 원문 보존 원칙, 그리고 녹음 재전사 대조의
+/// 기준선이 오염되면 분석 루프 자체가 무의미해진다. 확정 경로(`applyFinal`)·잠정 줄에도 넣지 않는다(자막 깜빡임).
+/// 엔진 레벨 어휘 주입(contextualStrings)은 Apple 경로 미지원이라 후처리 치환이 유일한 레버다.
 struct ReplaceRule: Codable, Identifiable, Equatable {
     var id = UUID()
     var from: String
     var to: String
-    var wholeWord = true   // 단어 단위 — 문자·숫자 룩어라운드(한글·라틴 공용, `\b`는 한글에 안 든다 — 언어학자 위원)
+    var wholeWord = true   // 단어 단위 — 문자·숫자 룩어라운드(한글·라틴 공용, `\b`는 한글에 안 든다)
 
     static let storageKey = "vv.replaceRules"
 
@@ -24,7 +24,7 @@ struct ReplaceRule: Codable, Identifiable, Equatable {
 
     /// 위에서 아래 순서로 전부 적용. 빈 규칙은 건너뛴다.
     /// 단어 단위 — 라틴은 앞·뒤 경계 모두, **한글은 앞 경계만**: 조사·합성어가 띄어쓰기 없이 붙으므로("정크성은"·"삼송전자")
-    /// 뒤 경계를 요구하면 실제 녹취록에서 거의 안 맞는다(2026-09-11 제작자 실측 "정크성→접근성이 기존 녹취록에 안 먹힘").
+    /// 뒤 경계를 요구하면 실제 녹취록에서 거의 안 맞는다(2026-09-11 실사용 검증 "정크성→접근성이 기존 녹취록에 안 먹힘").
     static func apply(_ text: String, rules: [ReplaceRule]) -> String {
         var s = text
         for r in rules where !r.from.isEmpty {
@@ -42,7 +42,7 @@ struct ReplaceRule: Codable, Identifiable, Equatable {
     }
 
     #if DEBUG
-    /// 자가 점검(하네스 `VV_PROBE_REPLACE=1`) — 규칙 로직이 깨지면 여기서 먼저 걸린다.
+    /// 자가 점검(`VV_PROBE_REPLACE=1`) — 규칙 로직이 깨지면 여기서 먼저 걸린다.
     static func selfTest() -> [String] {
         let ko = [ReplaceRule(from: "정크성", to: "접근성")], en = [ReplaceRule(from: "cat", to: "dog")]
         let cases: [(String, [ReplaceRule], String)] = [
@@ -61,7 +61,7 @@ struct ReplaceRule: Codable, Identifiable, Equatable {
     #endif
 
     /// 군말 제거(내보내기 전용 · 기본 OFF) — 단독 토큰만: 한국어 음/어/저기, 인니어 anu/eee/hmm, 영어 um/uh/erm.
-    /// '그'·'아'는 실단어("그 계약서")라 제외(언어학자 위원). 제거 후 ", ," 같은 구두점 잔재 정리.
+    /// '그'·'아'는 실단어("그 계약서")라 제외. 제거 후 ", ," 같은 구두점 잔재 정리.
     static func removeFillers(_ text: String) -> String {
         let fillers = "(?:음+|어+|저기|anu|eee+|hmm+|um+|uh+|erm?)"
         var s = text.replacingOccurrences(

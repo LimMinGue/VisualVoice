@@ -8,7 +8,7 @@ struct VisualVoiceApp: App {
     init() {
         #if DEBUG
         ReplaceRule.runSelfTestIfRequested()   // VV_PROBE_REPLACE=1 — 치환 규칙 자가 점검 후 종료
-        WindowProbe.runIfRequested()   // VV_PROBE_FILE=… 이면 창 없이 실시간 경로 하네스 실행 후 종료
+        WindowProbe.runIfRequested()   // VV_PROBE_FILE=… 이면 창 없이 실시간 경로 회귀 테스트 실행 후 종료
         #endif
     }
 
@@ -33,7 +33,7 @@ struct VisualVoiceApp: App {
         .windowResizability(.contentMinSize)
         .defaultSize(width: 360, height: 300)
         #else
-        // iPad — 대면대화(마이크) 전용 셸. 팝아웃·시스템오디오 제외 (decisions §10 · 목업 컨펌 2026-07-18)
+        // iPad — 대면대화(마이크) 전용 셸. 팝아웃·시스템오디오 제외
         WindowGroup {
             IPadShellView()
                 .environmentObject(app)

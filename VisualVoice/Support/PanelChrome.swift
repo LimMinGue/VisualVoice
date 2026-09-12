@@ -4,7 +4,7 @@ import AppKit
 #endif
 
 extension Color {
-    /// 0xRRGGBB 정수로 색을 만든다 (decisions.md §6 팔레트).
+    /// 0xRRGGBB 정수로 색을 만든다 (팔레트 색상 정의용).
     init(hex: UInt32) {
         self.init(.sRGB,
                   red: Double((hex >> 16) & 0xFF) / 255,
@@ -14,8 +14,8 @@ extension Color {
     }
 }
 
-#if os(macOS)  // 팝아웃·창 제어 3종(AppKit) — iPad 제외 범위 (decisions §10). Color(hex:)는 공용이라 위에 둠.
-/// 다크 반투명(HUD) 배경 — decisions.md §6 "영상 위 가독성" 규약.
+#if os(macOS)  // 팝아웃·창 제어 3종(AppKit) — iPad 제외 범위. Color(hex:)는 공용이라 위에 둠.
+/// 다크 반투명(HUD) 배경 — "영상 위 가독성" 규약.
 struct VisualEffectBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
@@ -27,7 +27,7 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
-/// 플로팅 항상-위 패널 창 설정 — decisions.md §5·§6.
+/// 플로팅 항상-위 패널 창 설정.
 /// 창 알파는 항상 1.0 — 불투명도 슬라이더는 배경 딤에만 적용(자막 텍스트는 절대 투명해지지 않음, 2026-07-17 치명 결함 수정).
 /// 단순화: 완전 무테두리·둥근 모서리 커스텀 창은 후속 다듬기. 지금은 hiddenTitleBar + floating으로 충분.
 struct WindowConfigurator: NSViewRepresentable {
@@ -54,8 +54,8 @@ struct WindowConfigurator: NSViewRepresentable {
 }
 
 /// 창 생명주기 관찰자 — 특정 NSWindow의 가림/최소화(onOcclusion) 및 사용자 이동·크기변경(onModified)을 보고.
-/// 팝아웃 자동 표시(창 가림 시) 배선 — wargame `[2026-07-18]_popout_auto_show` · decisions §8.
-/// QC 조건: occlusionState는 '완전 가림'에만 반응(부분 가림 무반응) — 실측 확인 대상.
+/// 팝아웃 자동 표시(창 가림 시) 배선에 쓰인다.
+/// 주의: occlusionState는 '완전 가림'에만 반응(부분 가림 무반응) — 실측 확인 대상.
 struct WindowEventObserver: NSViewRepresentable {
     var onOcclusion: ((Bool) -> Void)? = nil    // true = 가려짐/최소화(비가시)
     var onModified: (() -> Void)? = nil         // 사용자 이동·크기변경
@@ -103,7 +103,7 @@ struct WindowEventObserver: NSViewRepresentable {
 }
 
 /// "Finder에서 보기" — 녹음 파일을 재전사 도구에 넣을 수 있도록 위치만 알려준다.
-/// 인앱 재생기는 v1 범위 밖(계측 범위 확정 · decisions §14). 설정·세션 상세가 공유한다(규칙 4).
+/// 인앱 재생기는 v1 범위 밖(녹음은 계측 목적 한정). 설정·세션 상세가 공유한다.
 struct FinderRevealButton: View {
     var urls: [URL] = []                              // 비면 폴더 자체를 연다
     var folder: URL = SessionRecorder.folder

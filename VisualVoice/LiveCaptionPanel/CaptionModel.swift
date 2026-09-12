@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 
-/// decisions.md §6 확정 팔레트 + 앱 셸 색(다크 단일 테마).
+/// 확정 팔레트 + 앱 셸 색(다크 단일 테마).
 enum Theme {
     // 자막 · 화자
     static let ink       = Color(hex: 0xEEF1F6)
@@ -12,7 +12,7 @@ enum Theme {
     static let rec       = Color(hex: 0xF26D6D)
     static let trans     = Color(hex: 0x8FC3D6)
     static let good      = Color(hex: 0x5BC8A0)
-    static let warn      = Color(hex: 0xFEBC2E)   // 경고(노랑) — 리터럴 8곳 단일화(2026-09-11, 규칙 4)
+    static let warn      = Color(hex: 0xFEBC2E)   // 경고(노랑) — 흩어져 있던 리터럴 8곳 단일화(2026-09-11)
     static let me        = Color(hex: 0x7AA2F7)
     static let p1        = Color(hex: 0x5BC8A0)
     static let p2        = Color(hex: 0xE890A8)
@@ -41,7 +41,7 @@ struct AppLanguage: Hashable, Identifiable {
     }
 }
 
-/// 세션 언어 — 단일(자막만) 또는 쌍(자막+번역) (decisions.md §2, 2026-07-17 최종).
+/// 세션 언어 — 단일(자막만) 또는 쌍(자막+번역).
 /// 근본 목적은 청각 지원: 같은 언어(특히 한↔한) 자막·녹취가 1순위, 번역은 옵션.
 /// 쌍의 방향(A→B/B→A)은 발화별 자동 감지라 순서 개념 없음.
 struct LanguagePair: Hashable, Identifiable {
@@ -86,7 +86,7 @@ enum CaptureMode: Identifiable, CaseIterable {
     var isPrimary: Bool { self == .inPerson }
 }
 
-/// 화자 — 마이크=나(로컬), 시스템 오디오=상대 N(원격). decisions.md §3·§6.
+/// 화자 — 마이크=나(로컬), 시스템 오디오=상대 N(원격).
 /// unlabeled: 단일 마이크 실전사에서 화자 분리 배선 전 상태 — "나"로 사칭하지 않음(정직성).
 enum Speaker: Hashable, Codable {
     case me
@@ -118,7 +118,7 @@ struct CaptionLine: Identifiable, Codable {
     var speaker: Speaker
     var source: String
     var translation: String
-    /// AI 재번역(종료 후 내장 LLM) — 실시간 translation은 절대 불변(조용한 고쳐쓰기 금지, §11.4).
+    /// AI 재번역(종료 후 내장 LLM) — 실시간 translation은 절대 불변(조용한 고쳐쓰기 금지).
     /// nil = 재번역 안 됨(실시간본 표시·마커 없음). CodingKeys 없는 자동합성이라 구 JSON 안전.
     var refinedTranslation: String? = nil
     var timecode: String
@@ -128,7 +128,7 @@ struct CaptionLine: Identifiable, Codable {
     var fluidSpeaker: Int? = nil        // 화자 분리 트랙 번호(LS-EEND) — 나 지정·숨김의 키
     var clockStart: Double? = nil       // 오디오 시계(초) — 화자 세그먼트 정렬용
     var clockEnd: Double? = nil
-    /// 사용자가 직접 지정한 화자 — 라이브 backfill·배치 재계산이 덮어쓰지 않는다(§3 조용한 고쳐쓰기 금지 · 2026-09-11 B②).
+    /// 사용자가 직접 지정한 화자 — 라이브 backfill·배치 재계산이 덮어쓰지 않는다(조용한 고쳐쓰기 금지 · 2026-09-11).
     /// ⚠️ 저장은 Optional(`userSetFlag`)로 — 합성 Decodable은 `Bool = false` 기본값을 **쓰지 않고** 키 부재를 오류로 낸다.
     /// (2026-09-11 실측: 이 필드를 Bool로 넣자 구 21건 로드가 통째로 실패해 샘플이 부활했다. Optional만 decodeIfPresent.)
     var speakerIsUserSet: Bool {
@@ -143,7 +143,7 @@ struct CaptionLine: Identifiable, Codable {
         case userSetFlag = "speakerIsUserSet"
     }
 
-    /// 한↔인니 양방향 예시 (언어 쌍, decisions.md §2·§6).
+    /// 한↔인니 양방향 예시 (언어 쌍).
     static let sampleLive: [CaptionLine] = [
         .init(speaker: .me,
               source: "자카르타 팀은 화요일 10시가 괜찮을까요?",
@@ -208,7 +208,7 @@ struct CaptionLine: Identifiable, Codable {
     ]
 }
 
-/// AI 재번역 상태 — MinutesState 4-케이스 규약 복제(침묵 실패 금지, §11.4).
+/// AI 재번역 상태 — MinutesState 4-케이스 규약 복제(침묵 실패 금지).
 /// 진행률(n/N)은 영속 대상이 아니라 AppModel @Published(라이브 신호)로만.
 enum RefinementState: Codable, Equatable {
     case refining
@@ -228,12 +228,12 @@ struct Session: Identifiable, Codable {
     var transcript: [CaptionLine]? = nil   // 실녹취 — JSON으로 영구 저장 (2026-07-17)
     var minutes: MinutesState = .none      // 회의록 — 세션 정지 시 온디바이스 생성
     var refinement: RefinementState? = nil // AI 재번역 — nil=미시도(구 세션 하위호환, decodeIfPresent 안전)
-    // 2026-09-11 (SpectaLing 대조 §15.3 ⑥ — 세션 메타 부재): 전부 Optional = 구 JSON은 decodeIfPresent로 안전.
+    // 2026-09-11 (세션 메타 부재 보완): 전부 Optional = 구 JSON은 decodeIfPresent로 안전.
     var createdAt: Date? = nil             // 진짜 날짜. 구 세션은 nil → 녹음 파일 생성시각으로 복구 시도, 못 하면 '날짜 미상'
-    var engineLabel: String? = nil         // 어느 인식기가 만든 세션인가 — §14 분석 루프의 사후 판별 근거
+    var engineLabel: String? = nil         // 어느 인식기가 만든 세션인가 — 사후 분석의 판별 근거
     var modelUsed: String? = nil
     var notes: [String]? = nil             // 세션 중 열화 사유(마이크 실패·오디오 끊김·녹음 실패·번역 실패) — 영속 고지
-    var retranscript: [CaptionLine]? = nil // 녹음 재전사 대본(B④) — 라이브 자막과 대조하는 '정답 대본'. 원 transcript는 불변
+    var retranscript: [CaptionLine]? = nil // 녹음 재전사 대본 — 라이브 자막과 대조하는 '정답 대본'. 원 transcript는 불변
     var retranscriptInfo: String? = nil    // 재전사 조건(모델·파일·줄 수)
 
     enum CodingKeys: String, CodingKey {
@@ -314,7 +314,7 @@ enum SessionStore {
         for i in sessions.indices where sessions[i].minutes == .generating {
             sessions[i].minutes = .unavailable("회의록 생성 중 앱이 종료되었습니다. 녹취록은 보존되어 있습니다.")
         }
-        // AI 재번역 중 종료 — '재번역 중' 영구 매달림 방지(동일 규약 미러, §11.4)
+        // AI 재번역 중 종료 — '재번역 중' 영구 매달림 방지(회의록과 동일 규약)
         for i in sessions.indices where sessions[i].refinement == .refining {
             sessions[i].refinement = .unavailable("AI 재번역 중 앱이 종료되었습니다 — 실시간 번역을 표시하고 있어요.")
         }
@@ -329,7 +329,7 @@ enum SessionStore {
         return sessions
     }
 
-    /// 저장 — 실패 사유를 돌려준다(nil=성공). 구 코드는 `try? write`로 쓰기 실패를 삼켰다(2026-09-11 §15.3 ④).
+    /// 저장 — 실패 사유를 돌려준다(nil=성공). 구 코드는 `try? write`로 쓰기 실패를 삼켰다(2026-09-11).
     @discardableResult
     static func save(_ sessions: [Session]) -> String? {
         NSLog("VV store: 저장 %d건", sessions.count)   // 계측 — 2026-07-17 빈 배열([]) 저장 미스터리 추적
@@ -348,7 +348,7 @@ enum SessionStore {
 @MainActor
 final class LiveMetrics: ObservableObject {
     @Published var meterStep: Int = 0            // 레벨 미터 칸 수 0~7 (칸 변화 시에만 갱신)
-    @Published var micMeterStep: Int = 0         // 온라인 미팅 마이크 스트림 미터 — 2계통 표시 (decisions §12)
+    @Published var micMeterStep: Int = 0         // 온라인 미팅 마이크 스트림 미터 — 2계통 표시
     @Published var elapsed: TimeInterval = 0
     @Published var silenceSeconds: Int = 0
     @Published var firstCaptionDelay: Double?    // 실측 계기판: 말소리 감지 → 첫 자막
@@ -366,18 +366,18 @@ final class LiveMetrics: ObservableObject {
     }
 }
 
-/// 앱 전역 상태 — 세션 상태 머신(안전③) + 마이크 STT 배선 + 무음 감지(안전②).
+/// 앱 전역 상태 — 세션 상태 머신 + 마이크 STT 배선 + 무음 감지.
 @MainActor
 final class AppModel: ObservableObject {
     enum Screen: Hashable { case home, live, detail, settings, archive }
-    /// 세션 상태 머신 — 덮어쓰기·실수 종료 방지의 근간 (워게임 usability §1)
+    /// 세션 상태 머신 — 덮어쓰기·실수 종료 방지의 근간
     enum SessionState { case idle, preparing, recording, paused }
 
     @Published var screen: Screen = .home
-    // 온보딩 — 첫 실행에만(hasOnboarded 플래그). decisions §5 · 목업 컨펌 2026-07-18.
+    // 온보딩 — 첫 실행에만(hasOnboarded 플래그).
     @Published var showOnboarding = !UserDefaults.standard.bool(forKey: "vv.hasOnboarded")
     func finishOnboarding() { UserDefaults.standard.set(true, forKey: "vv.hasOnboarded"); showOnboarding = false }
-    /// 세션 언어 — 마지막 선택 유지(UserDefaults · 2026-09-11 §2 개정). "기본값 = 한국어·한국어"는 최초 실행 기본값.
+    /// 세션 언어 — 마지막 선택 유지(UserDefaults · 2026-09-11). "기본값 = 한국어·한국어"는 최초 실행 기본값.
     @Published var pair: LanguagePair = AppModel.loadPair() {
         didSet { UserDefaults.standard.set([pair.a.code, pair.b.code], forKey: "vv.pair") }
     }
@@ -408,14 +408,14 @@ final class AppModel: ObservableObject {
     @Published var sessionState: SessionState = .idle
     @Published var statusMessage: String?         // 준비/오류 안내
 
-    /// 세션 음원 녹음 상태 — 청각으로 확인할 수 없으므로 세션 내내 화면에 떠 있어야 한다(decisions §14).
+    /// 세션 음원 녹음 상태 — 청각으로 확인할 수 없으므로 세션 내내 화면에 떠 있어야 한다.
     enum RecordingStatus: Equatable { case off, on, failed(String) }
     @Published var recordingStatus: RecordingStatus = .off
     /// 세션 ID를 시작 시점에 확정한다 — 녹음 파일 이름의 근거. 종료 시점에 만들면 파일과 세션을
-    /// 잇는 rename이 필요해지고, 그 rename 실패가 곧 영구 고아가 된다(워게임 §0-⑦, QC 조건).
+    /// 잇는 rename이 필요해지고, 그 rename 실패가 곧 영구 고아가 된다.
     private var pendingSessionID: UUID?
 
-    // 팝아웃 자동 표시(창 가림 시) — decisions §8 / wargame `[2026-07-18]_popout_auto_show`
+    // 팝아웃 자동 표시(창 가림 시)
     @Published var mainWindowOccluded = false     // 메인 창이 가려지거나 최소화됨
     @Published var popoutOpen = false             // 팝아웃 창 열림(팝아웃 onAppear/onDisappear가 갱신)
     var popoutAutoShown = false                   // 자동으로 띄움(상단 '자동' 배지·자동닫기 판정)
@@ -432,14 +432,14 @@ final class AppModel: ObservableObject {
     init() {
         // 저장분 복원 — 없으면 샘플(최초 실행 시드).
         // 녹음 고아 청소는 **복원에 성공했을 때만** — 실패 상태에서 돌리면 살아 있는 녹음을 전량 지운다
-        // (세션이 폐기·삭제된 뒤 남은 파일과 크래시 잔재를 한 번에 정리, decisions §14).
+        // (세션이 폐기·삭제된 뒤 남은 파일과 크래시 잔재를 한 번에 정리).
         if let saved = SessionStore.load() { sessions = saved }
         storeNotice = SessionStore.loadError
         SessionRecorder.repairInterrupted()   // 지난번 크래시로 마감 못 한 녹음 살리기(삭제는 하지 않는다)
     }
     @Published var storeNotice: String?           // 세션 파일 로드 실패 고지(셸 배너) — 저장 성공으로 지워지지 않는다
 
-    // ── 화자 분리 상태 (워게임 2026-07-17 확정: 수동 '나' 지정 · 자막만 숨김) ──
+    // ── 화자 분리 상태 (2026-07-17 확정: 수동 '나' 지정 · 자막만 숨김) ──
     private var speakerSegments: [MicTranscriptionEngine.SpeakerSegment] = []
     private var tentativeSegments: [MicTranscriptionEngine.SpeakerSegment] = []
     private var speakerMap: [Int: Speaker] = [:]
@@ -448,9 +448,9 @@ final class AppModel: ObservableObject {
     @Published var mySpeakerIndex: Int?
     @Published var hiddenSpeakerIndexes: Set<Int> = []
 
-    // ── 온라인 미팅 마이크 동시 캡처 (decisions §12 · 2026-07-24) ──
+    // ── 온라인 미팅 마이크 동시 캡처 (2026-07-24) ──
     // 스트림별 자막 상태 — main(주 엔진: 대면=마이크/온라인 미팅=시스템)·myMic(온라인 미팅의 내 발화 부가 스트림).
-    // 병합·잠정은 같은 스트림끼리만(마이크 확정이 시스템 확정에 오병합되는 크로스 병합 차단 — Blueprint §4).
+    // 병합·잠정은 같은 스트림끼리만(마이크 확정이 시스템 확정에 오병합되는 크로스 병합 차단).
     enum CapStream: Hashable { case main, myMic }
     private struct StreamState {
         var volatileID: UUID?
@@ -461,13 +461,13 @@ final class AppModel: ObservableObject {
     private var streamStates: [CapStream: StreamState] = [.main: StreamState()]
     private var micEngine: MicTranscriptionEngine?     // nil = 단일 소스 세션
     @Published private(set) var dualCaptureSession = false   // 온라인 미팅 = 토글·미터 2계통 표시
-    @Published var micCaptureOn = true                 // "내 마이크" 토글 — 세션마다 켜짐 기본 (§12)
+    @Published var micCaptureOn = true                 // "내 마이크" 토글 — 세션마다 켜짐 기본
     @Published var micBannerText: String?              // 마이크 소프트 실패 배너(권한 거부 등 — 세션은 계속)
     @Published var speakerOutputActive = false         // 내장 스피커 출력 감지 — 이중 자막 경고 배너
     private var ttsSpeaking = false                    // 읽어주기 재생 중 — 토글과 합성해 micMuted 결정
     private var tickCount = 0                          // 스피커 출력 폴링 주기(5초) 계수
 
-    /// 라이브 표시용 — 숨긴 화자 제외(녹취록에는 전량 보존, QC 데이터 손실 제로)
+    /// 라이브 표시용 — 숨긴 화자 제외(녹취록에는 전량 보존 — 데이터 손실 제로)
     var visibleLiveLines: [CaptionLine] {
         liveLines.filter { line in
             guard let idx = line.fluidSpeaker else { return true }
@@ -496,13 +496,13 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// 무음 경고 임계 — 잠정 기본 15초 (변수 `(무음경고임계초)` — 실사용 후 조정)
+    /// 무음 경고 임계 — 잠정 기본 15초 (실사용 후 조정)
     var showSilenceWarning: Bool { sessionState == .recording && metrics.silenceSeconds >= 15 }
 
     func start(_ mode: CaptureMode) {
-        // 진행 중 세션 존재 → 덮어쓰지 않고 라이브로 복귀 (워게임: start() 무조건 덮어쓰기 제거)
+        // 진행 중 세션 존재 → 덮어쓰지 않고 라이브로 복귀 (start()의 무조건 덮어쓰기 제거)
         guard sessionState == .idle else { screen = .live; return }
-        // 대면 대화=마이크 / 온라인 미팅=시스템 오디오(SCK)+마이크 병행(decisions §12). 나머지 2종은 다음 스파이크 (타일 비활성)
+        // 대면 대화=마이크 / 온라인 미팅=시스템 오디오(SCK)+마이크 병행. 나머지 2종은 미구현 (타일 비활성)
         let source: MicTranscriptionEngine.Source
         switch mode {
         case .inPerson:      source = .mic
@@ -518,7 +518,7 @@ final class AppModel: ObservableObject {
         sessionStartedAt = Date()
         streamStates = [.main: StreamState()]
         dualCaptureSession = (mode == .onlineMeeting)
-        micCaptureOn = true                       // §12: 세션마다 켜짐 기본
+        micCaptureOn = true                       // 세션마다 켜짐 기본
         micBannerText = nil
         speakerOutputActive = false
         ttsSpeaking = false
@@ -546,7 +546,7 @@ final class AppModel: ObservableObject {
         engine.onFinal    = { [weak self] text, cont in Task { @MainActor in self?.applyFinal(text, continuation: cont) } }
         engine.onLevel    = { [weak self] lv   in Task { @MainActor in self?.applyLevel(lv) } }
         engine.onStatus   = { [weak self] msg  in Task { @MainActor in
-            self?.statusMessage = msg   // 준비·수신·중단 상태를 항상 표시 (침묵 실패 금지 — 안전②)
+            self?.statusMessage = msg   // 준비·수신·중단 상태를 항상 표시 (침묵 실패 금지)
         } }
         engine.onRecognitionRestart = { [weak self] in Task { @MainActor in
             self?.commitStaleVolatile()   // 인식기 교체 직전, 떠 있던 잠정 자막을 확정으로 살림
@@ -554,8 +554,8 @@ final class AppModel: ObservableObject {
         SpeechOut.onSpeakingChanged = { [weak self] speaking in Task { @MainActor in
             guard let self else { return }
             self.ttsSpeaking = speaking
-            self.engine?.micMuted = speaking   // 읽어주기 재생 중 마이크 차단 (§1-⑧ — 대면 주 엔진)
-            self.syncMicMute()                 // 온라인 미팅 마이크 엔진 = TTS ∪ 토글 합성 (§12)
+            self.engine?.micMuted = speaking   // 읽어주기 재생 중 마이크 차단 (대면 주 엔진)
+            self.syncMicMute()                 // 온라인 미팅 마이크 엔진 = TTS ∪ 토글 합성
         } }
         engine.onSpeakerSegments = { [weak self] segs in Task { @MainActor in
             self?.applySpeakerSegments(segs)
@@ -564,14 +564,14 @@ final class AppModel: ObservableObject {
         speakerMap.removeAll(); nextRemoteNumber = 1
         mySpeakerIndex = nil; hiddenSpeakerIndexes.removeAll()
         lastFinalClock = 0
-        popoutManuallyClosed = false; popoutUserMoved = false   // 새 세션 = 팝아웃 자동 표시 억제 해제(decisions §8)
+        popoutManuallyClosed = false; popoutUserMoved = false   // 새 세션 = 팝아웃 자동 표시 억제 해제
 
-        // 엔진 라우팅(decisions §2): 인니 포함 세션=WhisperKit(단일 인니=고정, 쌍=발화별 자동 감지) / 그 외=Apple.
-        // 한⇄영 쌍은 당분간 Apple(언어1 기준) — 상대 영어 발화 인식은 Whisper 상향 시 개선(스파이크 한계 명시).
+        // 엔진 라우팅: 인니 포함 세션=WhisperKit(단일 인니=고정, 쌍=발화별 자동 감지) / 그 외=Apple.
+        // 한⇄영 쌍은 당분간 Apple(언어1 기준) — 상대 영어 발화 인식은 Whisper 상향 시 개선(현재 한계 명시).
         let usesWhisper = (pair.a == .indo || pair.b == .indo)
         sessionUsesWhisper = usesWhisper   // 세션 메타(engineLabel·modelUsed)용
 
-        // 온라인 미팅 = 마이크 엔진 병행 (decisions §12 · Route A) — 내 발화를 '나' 스트림으로 자막·녹취.
+        // 온라인 미팅 = 마이크 엔진 병행 — 내 발화를 '나' 스트림으로 자막·녹취.
         // 실패해도 세션은 계속(소프트 — 시스템만 + 배너). 디아라이저 없음(마이크=나 고정), Whisper는 공유 파이프.
         if mode == .onlineMeeting {
             streamStates[.myMic] = StreamState()
@@ -660,7 +660,6 @@ final class AppModel: ObservableObject {
     }
 
     /// 정지(확인 다이얼로그 통과 후) — 세션 저장 → 세션 상세로 전환.
-    /// `(정지확인방식)` = 확인 다이얼로그(잠정), `(종료후재개유예분)` 이어붙임은 후속.
     /// 무음 재시작·정지 시 잠정 자막을 확정으로 승격 — 마지막 발화 유실 방지 (0구간 버그 수정)
     private func commitStaleVolatile() {
         for stream in Array(streamStates.keys) {
@@ -668,7 +667,7 @@ final class AppModel: ObservableObject {
                let idx = liveLines.firstIndex(where: { $0.id == id }) {
                 liveLines[idx].isVolatile = false
                 if stream == .main { stampAndAssignSpeaker(at: idx) }
-                else { liveLines[idx].speaker = .me }   // 마이크 스트림 = 나 고정 (§12)
+                else { liveLines[idx].speaker = .me }   // 마이크 스트림 = 나 고정
             }
             streamStates[stream]?.volatileID = nil
         }
@@ -681,7 +680,7 @@ final class AppModel: ObservableObject {
         ticker?.invalidate(); ticker = nil
         let stopping = engine
         engine = nil
-        let stoppingMic = micEngine               // 온라인 미팅 마이크 엔진 동반 정리 (§12)
+        let stoppingMic = micEngine               // 온라인 미팅 마이크 엔진 동반 정리
         micEngine = nil
         dualCaptureSession = false
         micBannerText = nil
@@ -689,19 +688,19 @@ final class AppModel: ObservableObject {
         let finals = liveLines.filter { !$0.isVolatile }
 
         // 녹음 마감(WAV 헤더 확정)은 엔진 stop()이 한다. 자막이 한 줄도 없어 세션이 폐기되더라도
-        // **녹음은 지우지 않는다** — 그 무자막 세션이 §13 증상의 유일한 증거이기 때문(SessionRecorder 주석 참조).
+        // **녹음은 지우지 않는다** — 그 무자막 세션이 인식 실패 증상의 유일한 증거이기 때문(SessionRecorder 주석 참조).
         let recordingID = pendingSessionID
         pendingSessionID = nil
         let hadRecording = recordingStatus == .on   // .failed면 파일이 온전하다고 말할 수 없다
         recordingStatus = .off
         Task { await stopping?.stop(); await stoppingMic?.stop() }
 
-        // 대화(음성·타이핑)가 하나도 없으면 저장 없이 종료 — 빈 세션이 최근 기록에 남지 않게 (2026-07-17 제작자 지시)
+        // 대화(음성·타이핑)가 하나도 없으면 저장 없이 종료 — 빈 세션이 최근 기록에 남지 않게 (2026-07-17)
         guard !finals.isEmpty else {
             sessionState = .idle
             statusMessage = nil
             metrics.reset()
-            // 무고지 홈 복귀 금지(§3 정직 표기 · 2026-09-11) — 이 무자막 세션의 녹음이 §13 증상의 유일한 증거다.
+            // 무고지 홈 복귀 금지(정직 표기 · 2026-09-11) — 이 무자막 세션의 녹음이 인식 실패 증상의 유일한 증거다.
             homeNotice = hadRecording
                 ? "이번 세션에서는 말소리를 찾지 못했습니다 — 세션은 저장하지 않았지만 녹음은 남아 있어요 (설정 > 녹음 > Finder에서 보기)."
                 : "이번 세션에서는 말소리를 찾지 못해 저장하지 않았습니다."
@@ -711,7 +710,7 @@ final class AppModel: ObservableObject {
 
         let startedAt = sessionStartedAt ?? Date()
         let timeFmt = DateFormatter(); timeFmt.dateFormat = "HH:mm"
-        // 세션 중 열화 사유 — 라이브 배너로만 알리던 것을 기록에 남긴다(§14 분석 루프가 조건을 알 수 있게).
+        // 세션 중 열화 사유 — 라이브 배너로만 알리던 것을 기록에 남긴다(사후 분석이 조건을 알 수 있게).
         var notes = sessionNotes
         if audioKicks > 0 { notes.append("오디오 입력 끊김 자동 복구 \(audioKicks)회") }
         if translator.failedCount > 0 { notes.append("실시간 번역 실패 \(translator.failedCount)줄 — 그 줄은 번역 없이 기록됐어요") }
@@ -737,7 +736,7 @@ final class AppModel: ObservableObject {
         openDetail(session)
 
         // 회의록 생성 — 온디바이스, 완료 시 목록·열린 상세 화면에 반영 (실패도 사유 표기 — 침묵 실패 금지)
-        // 이어서 AI 재번역 — 종료-후 잡 직렬화(회의록→재번역 순, 워게임 §D 동시실행·QoS: 메모리 동시 점유 방지)
+        // 이어서 AI 재번역 — 종료-후 잡 직렬화(회의록→재번역 순 — 메모리 동시 점유 방지)
         let sid = session.id
         let sessionPair = pair
         Task { [weak self] in
@@ -749,18 +748,18 @@ final class AppModel: ObservableObject {
         }
     }
 
-    // MARK: AI 재번역 (종료 후 · 앱 내장 MLX — decisions §11.4)
+    // MARK: AI 재번역 (종료 후 · 앱 내장 MLX)
 
     var retransTask: Task<Void, Never>?                       // 취소 핸들(상세 취소 버튼)
     @Published var retransProgress: (done: Int, total: Int)?  // 'AI 재번역 중… n/N' — 영속 아님(라이브 신호)
 
     private func startRetranslation(sid: UUID, finals: [CaptionLine], pair: LanguagePair) {
-        // 가드(워게임 §D 트리거_시점): 단일 언어 세션은 번역 자체가 없음 · 이중 실행 금지(.refining이 락)
+        // 가드: 단일 언어 세션은 번역 자체가 없음 · 이중 실행 금지(.refining이 락)
         guard !pair.isSingle else { return }
         guard sessions.first(where: { $0.id == sid })?.refinement != .refining else { return }
         setRefinement(sid: sid, .refining)   // await 이전 동기 세팅 — 두 트리거가 같이 진입하는 창 차단
 
-        retransTask = Task(priority: .utility) { [weak self] in   // 실시간 STT 보호 — 낮은 QoS(§D)
+        retransTask = Task(priority: .utility) { [weak self] in   // 실시간 STT 보호 — 낮은 QoS
             // 새 녹음 진행 중이면 착수 보류(폴링 대기) — 첫 자막 <1.5초 성역 보호.
             // 단순화: 폴링 5초 — 일시정지/재개 스케줄러가 필요해지면 그때 승격.
             while let self, self.sessionState == .recording {
@@ -781,7 +780,7 @@ final class AppModel: ObservableObject {
                 self.sessions[i].transcript = lines
             }
             self.sessions[i].refinement = outcome.state
-            if outcome.failed > 0 {   // 부분 실패 수치 영속(§3 정직 표기) — 화면의 N/M은 녹취록에서 파생(스키마 무변경)
+            if outcome.failed > 0 {   // 부분 실패 수치 영속(정직 표기) — 화면의 N/M은 녹취록에서 파생(스키마 무변경)
                 self.sessions[i].notes = (self.sessions[i].notes ?? [])
                     + ["AI 재번역 \(outcome.attempted)줄 중 \(outcome.failed)줄 실패 — 그 줄은 실시간 번역을 표시하고 있어요"]
             }
@@ -812,11 +811,11 @@ final class AppModel: ObservableObject {
         if let id = streamStates[stream]?.volatileID, let idx = liveLines.firstIndex(where: { $0.id == id }) {
             liveLines[idx].source = text
         } else {
-            // 마이크 스트림 잠정 = '나' 칩 즉시 (화자 분리 없이 확정 신호 — §12)
+            // 마이크 스트림 잠정 = '나' 칩 즉시 (화자 분리 없이 확정 신호)
             let line = CaptionLine(speaker: stream == .myMic ? .me : .unlabeled, source: text, translation: "",
                                    timecode: LiveMetrics.format(elapsedNow), isVolatile: true)
             streamStates[stream]?.volatileID = line.id
-            // 동시 발화 시 잠정 순서 고정: 상대(main) 잠정 위 · 내 잠정 아래 (§12 화면 게이트 — 시각 위계)
+            // 동시 발화 시 잠정 순서 고정: 상대(main) 잠정 위 · 내 잠정 아래 (시각 위계)
             if stream == .main, let micVol = streamStates[.myMic]?.volatileID,
                let micIdx = liveLines.firstIndex(where: { $0.id == micVol }) {
                 liveLines.insert(line, at: micIdx)
@@ -830,7 +829,7 @@ final class AppModel: ObservableObject {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         var st = streamStates[stream] ?? StreamState()
         defer { streamStates[stream] = st }
-        // 잘못 쪼개진 문장 병합(2026-07-17 제작자 지시): "직전 확정이 6초 상한으로 발화 중간에서 잘렸을 때"만
+        // 잘못 쪼개진 문장 병합(2026-07-17): "직전 확정이 6초 상한으로 발화 중간에서 잘렸을 때"만
         // 새 조각을 직전 줄에 붙이고 병합문 전체를 재번역. 판정 기준은 직전 확정의 절단 힌트 —
         // 현재 조각 기준으로 보던 초판 버그 수정(TTS 실측: 장문 3분할 미병합). 무음 종결은 부호 없어도 별개 문장.
         if !t.isEmpty, st.lastFinalContinuation, mergeIntoPreviousIfContinuation(t, stream: stream, state: st) {
@@ -851,7 +850,7 @@ final class AppModel: ObservableObject {
                 liveLines[idx].isVolatile = false
                 liveLines[idx].timecode = LiveMetrics.format(elapsedNow)
                 if stream == .main { stampAndAssignSpeaker(at: idx) }
-                else { liveLines[idx].speaker = .me }   // 마이크 확정 = 나 고정, 시계·분리기 미사용 (§12)
+                else { liveLines[idx].speaker = .me }   // 마이크 확정 = 나 고정, 시계·분리기 미사용
                 translator.enqueue(lineID: id, text: t)   // 확정 즉시 상대 언어 번역 (쌍 세션)
                 st.lastFinalAt = Date()
                 st.lastFinalContinuation = continuation
@@ -876,7 +875,7 @@ final class AppModel: ObservableObject {
     /// 오병합 방지: 7초 이내 연속 + 같은 언어 + 화자 동일(분리기 판정 시) + 280자 상한.
     /// 종결부호는 판정에 안 씀 — turbo가 절단부에 마침표를 지어냄("크리스마스입니다." — 2026-07-17 TTS 실측).
     /// 병합 대상 = "같은 스트림"의 직전 확정(lastFinalLineID) — 다른 스트림·타이핑 줄이 사이에 끼어도
-    /// 자기 문장에만 붙는다(크로스 병합 차단, Blueprint §4). 끼임 시 문장이 위 줄에서 자라는 것은 의도된 표시.
+    /// 자기 문장에만 붙는다(크로스 병합 차단). 끼임 시 문장이 위 줄에서 자라는 것은 의도된 표시.
     private func mergeIntoPreviousIfContinuation(_ t: String, stream: CapStream, state: StreamState) -> Bool {
         guard let target = state.lastFinalLineID,
               let idx = liveLines.firstIndex(where: { $0.id == target }),
@@ -922,7 +921,7 @@ final class AppModel: ObservableObject {
     private func assignSpeakerIfPossible(at index: Int) {
         guard liveLines.indices.contains(index),
               !liveLines[index].isTyped,               // 타이핑 발화는 항상 '나'
-              !liveLines[index].speakerIsUserSet,      // 사용자 지정은 backfill이 덮지 않는다(QC 조건)
+              !liveLines[index].speakerIsUserSet,      // 사용자 지정은 backfill이 덮지 않는다
               let start = liveLines[index].clockStart,
               let end = liveLines[index].clockEnd,
               let idx = dominantSpeaker(from: start, to: end) else { return }
@@ -951,14 +950,14 @@ final class AppModel: ObservableObject {
         speakerSegments.append(contentsOf: segs.filter(\.finalized))
         tentativeSegments = segs.filter { !$0.finalized }
         if speakerSegments.count > 800 { speakerSegments.removeFirst(speakerSegments.count - 800) }
-        // 화자 라벨이 자막보다 늦게 도착하는 경우 — 최근 미배정 라인 backfill (워게임 엣지케이스)
+        // 화자 라벨이 자막보다 늦게 도착하는 경우 — 최근 미배정 라인 backfill (엣지케이스)
         for i in liveLines.indices.suffix(8)
         where !liveLines[i].isVolatile && liveLines[i].fluidSpeaker == nil {
             assignSpeakerIfPossible(at: i)
         }
     }
 
-    /// 칩 팝오버: 이 화자를 '나'로 지정 (수동 지정 — 워게임 확정)
+    /// 칩 팝오버: 이 화자를 '나'로 지정 (수동 지정)
     func markSpeakerAsMe(_ idx: Int) {
         mySpeakerIndex = idx
         speakerMap[idx] = .me
@@ -968,8 +967,8 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// 세션 상세 화자 재지정(2026-09-11 B②) — 저장된 세션의 줄 화자를 사용자가 바로잡는다.
-    /// `wholeTrack`이면 같은 분리 트랙(fluidSpeaker)의 모든 줄, 아니면 이 줄만. 텍스트는 건드리지 않는다(§14 대조 기준 보존).
+    /// 세션 상세 화자 재지정(2026-09-11) — 저장된 세션의 줄 화자를 사용자가 바로잡는다.
+    /// `wholeTrack`이면 같은 분리 트랙(fluidSpeaker)의 모든 줄, 아니면 이 줄만. 텍스트는 건드리지 않는다(대조 기준 보존).
     /// selectedSession + sessions[] 이중 반영 → didSet 영속(renameParticipant와 동일 패턴).
     func reassignSpeaker(lineID: UUID, to speaker: Speaker, wholeTrack: Bool) {
         guard let sid = selectedSession?.id else { return }
@@ -990,7 +989,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    // MARK: 종료 후 배치 작업 — 화자 다시 인식(B③) · 녹음 재전사(B④). 세션 진행 중 금지(공유 Whisper 파이프 경쟁 보호).
+    // MARK: 종료 후 배치 작업 — 화자 다시 인식 · 녹음 재전사. 세션 진행 중 금지(공유 Whisper 파이프 경쟁 보호).
 
     @Published var batchProgress: (label: String, done: Int, total: Int)?   // 영속 아님 — 라이브 신호
     @Published var batchError: String?                                       // 실패 사유(상세 카드) — 다음 실행 시 소멸
@@ -1008,7 +1007,7 @@ final class AppModel: ObservableObject {
                 }
                 guard let self, let i = self.sessions.firstIndex(where: { $0.id == sid }) else { return }
                 self.sessions[i].transcript = lines
-                self.sessions[i].notes = (self.sessions[i].notes ?? []) + [o.summary]   // 결과를 수치로 남긴다(§3 정직 표기)
+                self.sessions[i].notes = (self.sessions[i].notes ?? []) + [o.summary]   // 결과를 수치로 남긴다(정직 표기)
                 if self.selectedSession?.id == sid {
                     self.selectedSession?.transcript = lines
                     self.selectedSession?.notes = self.sessions[i].notes
@@ -1023,7 +1022,7 @@ final class AppModel: ObservableObject {
         guard canRunBatch, let s = sessions.first(where: { $0.id == sid }) else { return }
         batchError = nil
         batchProgress = ("재전사 준비 중…", 0, 0)
-        // 온라인 미팅 세션 = 시스템 스트림 녹음이 있다 → 마이크 파일은 '나'(§12 규약). 대면은 마이크가 모두라 화자 미상.
+        // 온라인 미팅 세션 = 시스템 스트림 녹음이 있다 → 마이크 파일은 '나'. 대면은 마이크가 모두라 화자 미상.
         let hasSystem = SessionRecorder.items(for: sid).contains { $0.stream == .system }
         let sessionPair = pair
         Task(priority: .utility) { [weak self] in
@@ -1045,13 +1044,13 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// 회의록 다시 만들기(2026-09-11 B⑥) — 실패·미가용 세션의 유일한 재시도 경로. 참여자 이름 정정분은 보존.
-    /// 재번역이 도는 중엔 호출부가 막는다(Gemma+FM 동시 상주 금지 — 워게임 §D). 세션 진행 중이어도 무관(FM만 사용).
+    /// 회의록 다시 만들기(2026-09-11) — 실패·미가용 세션의 유일한 재시도 경로. 참여자 이름 정정분은 보존.
+    /// 재번역이 도는 중엔 호출부가 막는다(Gemma+FM 동시 상주 금지). 세션 진행 중이어도 무관(FM만 사용).
     func regenerateMinutes(sid: UUID) {
         guard let i = sessions.firstIndex(where: { $0.id == sid }),
               sessions[i].minutes != .generating, sessions[i].refinement != .refining,
               let finals = sessions[i].transcript, !finals.isEmpty else { return }
-        // 사용자가 정정한 참여자 이름(hasKnownName)을 화자 라벨 기준으로 되살린다(Tester 조건)
+        // 사용자가 정정한 참여자 이름(hasKnownName)을 화자 라벨 기준으로 되살린다
         var keep: [String: String] = [:]
         if case .ready(let old) = sessions[i].minutes {
             for p in old.participants where p.hasKnownName { keep[p.speakerLabel] = p.name }
@@ -1070,7 +1069,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// 칩 팝오버: 화자 숨기기/해제 — 자막에서만 숨김, 녹취록 보존 (워게임 확정)
+    /// 칩 팝오버: 화자 숨기기/해제 — 자막에서만 숨김, 녹취록 보존
     func toggleHideSpeaker(_ idx: Int) {
         if hiddenSpeakerIndexes.contains(idx) { hiddenSpeakerIndexes.remove(idx) }
         else { hiddenSpeakerIndexes.insert(idx) }
@@ -1082,7 +1081,7 @@ final class AppModel: ObservableObject {
         if metrics.meterStep != step { metrics.meterStep = step }   // 칸 변화 시에만 재렌더
         if rms > 0.03 { lastVoiceAt = Date() }                      // 무음 경고 = "입력이 아예 없음" 감지(낮은 임계)
         // 첫 자막 지연의 기점은 '뚜렷한 발화 시작'(근접 발화 기준 0.17 + 1.5초 정적 후 재출발) —
-        // ⚠️ 2026-07-25: 엔진 게이트가 VAD로 옮겨가 이 임계와 더는 같지 않다(decisions §13). 원거리 발화는
+        // ⚠️ 2026-07-25: 엔진 게이트가 VAD로 옮겨가 이 임계와 더는 같지 않다. 원거리 발화는
         // 0.17을 못 넘으므로 앞사람만 말한 세션에서는 '첫 자막 +N초' 배지가 뜨지 않는다(계기판 공백, 자막은 정상).
         // 임계를 낮추면 소음이 시계를 출발시켜 수치가 부풀던 구 버그가 재발하므로, 엔진 발화 신호를 콜백으로
         // 받도록 바꾸기 전까지는 공백을 택한다 — 틀린 수치보다 없는 수치가 낫다.
@@ -1103,7 +1102,7 @@ final class AppModel: ObservableObject {
         metrics.firstCaptionDelay = Date().timeIntervalSince(fv)
     }
 
-    // ── 온라인 미팅 마이크 스트림 (decisions §12) ──
+    // ── 온라인 미팅 마이크 스트림 ──
 
     /// 마이크 스트림 레벨 — 미터 2계통의 마이크 칸. 무음 경고는 양쪽 합집합(한쪽만 살아도 경고 없음).
     private func applyMicLevel(_ rms: Float) {
@@ -1117,7 +1116,7 @@ final class AppModel: ObservableObject {
         micEngine?.micMuted = ttsSpeaking || !micCaptureOn
     }
 
-    /// "내 마이크" 토글 (라이브 상태바 — §12 화면 게이트). 끄면 떠 있던 내 잠정 줄은 폐기(미확정).
+    /// "내 마이크" 토글 (라이브 상태바). 끄면 떠 있던 내 잠정 줄은 폐기(미확정).
     func toggleMicCapture() {
         micCaptureOn.toggle()
         syncMicMute()
@@ -1149,14 +1148,14 @@ final class AppModel: ObservableObject {
                 } else {
                     self.audioBroken = false
                 }
-                // 마이크 스트림 워치독 — 상태줄 침범 없이 조용 복구(가시성은 마이크 미터가 담당 — §12).
+                // 마이크 스트림 워치독 — 상태줄 침범 없이 조용 복구(가시성은 마이크 미터가 담당).
                 // 음소거 중(토글 꺼짐·TTS 재생)엔 버퍼가 원래 멎으므로 제외(헛 kick 방지).
                 if let mic = self.micEngine, self.micCaptureOn, !self.ttsSpeaking,
                    mic.secondsSinceLastBuffer > 3 {
                     NSLog("VV mic-dual: 마이크 버퍼 %.0f초 끊김 — kickAudio", mic.secondsSinceLastBuffer)
                     mic.kickAudio()
                 }
-                // 스피커 출력 감시(5초 주기) — 이중 자막 경고 배너 (§12 (이중자막_방어_v1))
+                // 스피커 출력 감시(5초 주기) — 이중 자막 경고 배너
                 self.tickCount += 1
                 #if os(macOS)
                 if self.micEngine != nil, self.tickCount % 10 == 0 {
@@ -1205,16 +1204,16 @@ final class AppModel: ObservableObject {
 
     func delete(_ session: Session) {
         sessions.removeAll { $0.id == session.id }
-        SessionRecorder.deleteRecordings(for: session.id)   // 제작자 지시 2026-07-30: 세션과 녹음은 함께 사라진다
+        SessionRecorder.deleteRecordings(for: session.id)   // 세션과 녹음은 함께 사라진다
         if selectedSession?.id == session.id {
             selectedSession = nil
             screen = .home
         }
     }
 
-    /// 삭제 확인 다이얼로그 문구 — 네 진입점(기록 보관함·사이드바·홈·세션 상세)이 공유한다(규칙 4).
-    /// 사라지는 것을 수량·용량까지 밝힌다: 조용히 없어지는 데이터가 없어야 하고(§3),
-    /// 1GB짜리 분석 자료를 실수로 날리는 일도 막는다(목업 컨펌 2026-07-30).
+    /// 삭제 확인 다이얼로그 문구 — 네 진입점(기록 보관함·사이드바·홈·세션 상세)이 공유한다.
+    /// 사라지는 것을 수량·용량까지 밝힌다: 조용히 없어지는 데이터가 없어야 하고,
+    /// 1GB짜리 분석 자료를 실수로 날리는 일도 막는다.
     func deleteWarning(for session: Session?) -> String {
         let base = "녹취록과 회의록이 함께 삭제됩니다. 되돌릴 수 없습니다."
         guard let session else { return base }
@@ -1232,10 +1231,10 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// 타이핑 발화 — 대화 흐름에 내 발화로 추가, 쌍 세션이면 상대 언어로 자동 번역 (§1-⑧ ⓐⓑ).
+    /// 타이핑 발화 — 대화 흐름에 내 발화로 추가, 쌍 세션이면 상대 언어로 자동 번역.
     func sendTyped(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }   // QC: 빈 전송 차단
+        guard !trimmed.isEmpty else { return }   // 빈 전송 차단
         let line = CaptionLine(speaker: .me, source: trimmed, translation: "",
                                timecode: LiveMetrics.format(elapsedNow), isTyped: true)
         liveLines.append(line)
@@ -1244,7 +1243,7 @@ final class AppModel: ObservableObject {
 }
 
 /// 읽어주기(TTS) — 시스템 음성합성, 온디바이스·무의존.
-/// 재생 중 마이크 차단(자기 소리 재자막 루프 방지 — §1-⑧) + 종료 후 0.3초 잔향 여운을 두고 해제.
+/// 재생 중 마이크 차단(자기 소리 재자막 루프 방지) + 종료 후 0.3초 잔향 여운을 두고 해제.
 enum SpeechOut {
     private static let synth = AVSpeechSynthesizer()
     private static let watcher = Watcher()
@@ -1274,7 +1273,7 @@ enum SpeechOut {
     }
 }
 
-/// 패널 상시 컨트롤 상태 — decisions.md §6(밀도·글자 크기·번역·불투명도).
+/// 패널 상시 컨트롤 상태 — 밀도·글자 크기·번역·불투명도.
 @MainActor
 final class PanelSettings: ObservableObject {
     enum Density: String { case simple, detailed }   // 간결 / 상세 (raw = UserDefaults 영속화용)
@@ -1282,18 +1281,18 @@ final class PanelSettings: ObservableObject {
     @Published var fontScale: CGFloat      { didSet { d.set(Double(fontScale), forKey: K.fontScale) } }  // 하한 0.7 상한 1.8
     @Published var showTranslation: Bool   { didSet { d.set(showTranslation, forKey: K.showTranslation) } }
     @Published var opacity: Double         { didSet { d.set(opacity, forKey: K.opacity) } }             // 배경 딤 0.65~0.95
-    @Published var autoShowPopout: Bool    { didSet { d.set(autoShowPopout, forKey: K.autoShowPopout) } } // 창 가림 자동 표시(decisions §8)
-    @Published var recordAudio: Bool       { didSet { d.set(recordAudio, forKey: K.recordAudio) } }       // 세션 음원 저장(decisions §14)
-    @Published var replaceRules: [ReplaceRule] = ReplaceRule.load() { didSet { ReplaceRule.save(replaceRules) } }   // 치환 규칙(B⑤)
-    /// 무갭 발화 조기 확정(LocalAgreement · 실험 · 기본 OFF) — 엔진이 세션 시작 시 읽는다(C②)
+    @Published var autoShowPopout: Bool    { didSet { d.set(autoShowPopout, forKey: K.autoShowPopout) } } // 창 가림 자동 표시
+    @Published var recordAudio: Bool       { didSet { d.set(recordAudio, forKey: K.recordAudio) } }       // 세션 음원 저장
+    @Published var replaceRules: [ReplaceRule] = ReplaceRule.load() { didSet { ReplaceRule.save(replaceRules) } }   // 치환 규칙
+    /// 무갭 발화 조기 확정(LocalAgreement · 실험 · 기본 OFF) — 엔진이 세션 시작 시 읽는다
     @Published var localAgreement: Bool = UserDefaults.standard.bool(forKey: MicTranscriptionEngine.localAgreementKey) {
         didSet { UserDefaults.standard.set(localAgreement, forKey: MicTranscriptionEngine.localAgreementKey) }
     }
 
-    /// 표시용 치환 — 확정 줄·상세·내보내기가 이 한 함수를 지난다(규칙 4). 원문은 불변.
+    /// 표시용 치환 — 확정 줄·상세·내보내기가 이 한 함수를 지난다. 원문은 불변.
     func display(_ source: String) -> String { ReplaceRule.apply(source, rules: replaceRules) }
 
-    // 설정 영속화 — UserDefaults (2026-07-18 `(설정영속화범위)` 확정, 설정 화면 배선). didSet은 init에선 미발화.
+    // 설정 영속화 — UserDefaults (2026-07-18 설정 화면 배선). didSet은 init에선 미발화.
     private let d = UserDefaults.standard
     private enum K {
         static let density = "vv.density", fontScale = "vv.fontScale", showTranslation = "vv.showTranslation"

@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// 자막 렌더 공용 컴포넌트 — 창 안 라이브 뷰와 팝아웃 패널이 함께 쓴다 (decisions.md §6).
+/// 자막 렌더 공용 컴포넌트 — 창 안 라이브 뷰와 팝아웃 패널이 함께 쓴다.
 
 struct CaptionStreamView: View {
     let lines: [CaptionLine]
     var compact: Bool = false
 
-    // '새 자막' 배지 — 위로 스크롤해 읽는 중 새 확정 도착 알림 (decisions §8 · 목업 컨펌 2026-07-18)
+    // '새 자막' 배지 — 위로 스크롤해 읽는 중 새 확정 도착 알림
     @State private var atBottom = true
     @State private var newCount = 0
 
@@ -24,8 +24,8 @@ struct CaptionStreamView: View {
                 .frame(maxWidth: compact ? .infinity : 920, alignment: .leading)   // 행폭 캡 — 글자 상향(×1.3)에 비례 확대, 줄당 글자 수 유지 (WCAG 1.4.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .defaultScrollAnchor(.bottom)   // 새 자막 바닥 고정 — 위로 스크롤해 읽는 중엔 안 끌어내림 (2026-07-17 제작자 지시)
-            // 바닥 근접 판정 — (바닥판정_여유) 40pt (QC: 실측 튜닝 여지)
+            .defaultScrollAnchor(.bottom)   // 새 자막 바닥 고정 — 위로 스크롤해 읽는 중엔 안 끌어내림
+            // 바닥 근접 판정 — 바닥 여유 40pt (실측 튜닝 여지)
             .onScrollGeometryChange(for: Bool.self) { geo in
                 geo.contentOffset.y + geo.containerSize.height >= geo.contentSize.height - 40
             } action: { _, near in
@@ -68,22 +68,22 @@ struct CaptionLineView: View {
     @EnvironmentObject var app: AppModel
     @State private var showSpeakerMenu = false
 
-    /// 단일 언어 세션(자막만)에선 번역 줄 자체가 없다 (decisions.md §2).
+    /// 단일 언어 세션(자막만)에선 번역 줄 자체가 없다.
     private var showsTranslation: Bool {
         settings.showTranslation && !app.pair.isSingle && !line.translation.isEmpty
     }
 
-    /// 내 잠정 줄은 확정 크기로 — 상대 잠정만 크게(주 정보), 내 잠정은 확인용 피드백(§12 화면 게이트 시각 위계 타협)
+    /// 내 잠정 줄은 확정 크기로 — 상대 잠정만 크게(주 정보), 내 잠정은 확인용 피드백(시각 위계 타협)
     private var enlargedVolatile: Bool { line.isVolatile && !(line.speaker == .me && !line.isTyped) }
 
     private var srcSize: CGFloat {
-        (enlargedVolatile ? (compact ? 22 : 29) : (compact ? 20 : 26)) * settings.fontScale   // 일상 대화 기본 크기 상향 (2026-07-17 제작자 지시 2차)
+        (enlargedVolatile ? (compact ? 22 : 29) : (compact ? 20 : 26)) * settings.fontScale   // 일상 대화 기본 크기 상향
     }
     private var trSize: CGFloat {
-        (enlargedVolatile ? (compact ? 18 : 22) : (compact ? 17 : 21)) * settings.fontScale   // 일상 대화 기본 크기 상향 (2026-07-17 제작자 지시 2차)
+        (enlargedVolatile ? (compact ? 18 : 22) : (compact ? 17 : 21)) * settings.fontScale   // 일상 대화 기본 크기 상향
     }
 
-    /// 읽어주기 버튼 — 타이핑 발화(원문)·번역 줄 공용 (규칙 4: 반복 패턴 단일화)
+    /// 읽어주기 버튼 — 타이핑 발화(원문)·번역 줄 공용 (반복 UI 패턴 단일화)
     private func speakButton(text: String, langCode: String) -> some View {
         Button { SpeechOut.say(text, langCode: langCode) } label: {
             Image(systemName: "speaker.wave.2.fill")
@@ -98,7 +98,7 @@ struct CaptionLineView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            // 화자 칩 탭 → 나로 지정 / 숨기기 (화자 분리 배정 라인만 — 워게임 확정 UX)
+            // 화자 칩 탭 → 나로 지정 / 숨기기 (화자 분리 배정 라인만)
             Button {
                 if line.fluidSpeaker != nil { showSpeakerMenu = true }
             } label: {
@@ -135,13 +135,13 @@ struct CaptionLineView: View {
                             .foregroundStyle(Theme.ink3)
                             .help("타이핑 발화")
                     }
-                    // 치환 규칙은 확정 줄에만·렌더 시점에만(원문 불변 · 잠정 줄은 깜빡임 방지 — 2026-09-11 B⑤)
+                    // 치환 규칙은 확정 줄에만·렌더 시점에만(원문 불변 · 잠정 줄은 깜빡임 방지)
                     Text(line.isVolatile ? line.source : settings.display(line.source))
                         .font(.system(size: srcSize, weight: line.isVolatile ? .semibold : .regular))
                         .foregroundStyle(line.isVolatile ? Theme.ink : Theme.ink.opacity(0.75))   // 확정 톤 0.64→0.75 (AA 마진 확보)
                         .lineSpacing(compact ? 3 : 5)
                         .fixedSize(horizontal: false, vertical: true)
-                    // 번역 줄이 있으면 읽어주기 버튼은 번역 줄 끝 하나로 통일(중복 UI 방지 — 규칙 4)
+                    // 번역 줄이 있으면 읽어주기 버튼은 번역 줄 끝 하나로 통일(중복 UI 방지)
                     if line.isTyped, !showsTranslation {
                         speakButton(text: line.source, langCode: app.pair.a.code)
                     }
@@ -154,7 +154,7 @@ struct CaptionLineView: View {
                             .foregroundStyle(Theme.trans.opacity(line.isVolatile ? 1 : 0.78))   // 확정 번역 톤 상향(AA)
                             .lineSpacing(compact ? 2 : 4)
                             .fixedSize(horizontal: false, vertical: true)
-                        // 번역문을 그 언어 음성으로 재생 — 상대가 들을 수 있게 (2026-07-17 제작자 지시)
+                        // 번역문을 그 언어 음성으로 재생 — 상대가 들을 수 있게
                         speakButton(text: line.translation,
                                     langCode: TranslationCoordinator.detectLanguage(of: line.translation, between: app.pair))
                     }

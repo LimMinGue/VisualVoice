@@ -1,4 +1,4 @@
-VisualVoice AI 재번역 모델 — 출처 기록 (2026-09-11 · decisions §11.4 · §15.5-A⑧)
+VisualVoice AI 재번역 모델 — 출처 기록 (2026-09-11)
 
 실측(이 폴더의 config.json·파일 크기에서 직접 읽음 — 확정):
   아키텍처      Gemma2ForCausalLM (model_type gemma2)
@@ -8,11 +8,10 @@ VisualVoice AI 재번역 모델 — 출처 기록 (2026-09-11 · decisions §11.
   토크나이저    tokenizer.json 17,518,525 바이트
   폴더 생성일   2026-07-23
 
-출처(추정 — 다운로드 당시 리비전을 남기지 않았음, 규칙 1에 따라 '확정' 아님):
+출처(추정 — 다운로드 당시 리비전을 남기지 않아 '확정'이 아님):
   HuggingFace  mlx-community/gemma-2-9b-it-4bit  (위 config와 아키텍처·양자화 일치)
   리비전 SHA   미기록
 
 교체 시 규약:
-  - 이 폴더 통째 교체 1곳으로 모델 스왑(§11.4). 교체하면 이 파일의 실측값과 리비전을 함께 갱신할 것.
+  - 이 폴더를 통째로 교체하는 것만으로 모델을 바꿀 수 있다. 교체하면 이 파일의 실측값과 리비전을 함께 갱신할 것.
   - 재번역 프롬프트(ReTranslator.swift)는 JSON 출력 규약을 전제 — 디코더형이 아닌 모델(MADLAD 등)은 파서 재검토.
-  - 대조: SpectaLing은 Gemma 4 E2B/E4B/12B 3티어를 다운로드형으로 배포하고 저장소 커밋 SHA로 핀한다(§15.2).

@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 
-/// 온보딩 — 첫 실행만(hasOnboarded). 환영 → 권한 사전설명 → 언어팩 준비 → 시작 (decisions §5 · 목업 컨펌 2026-07-18).
+/// 온보딩 — 첫 실행만(hasOnboarded). 환영 → 권한 사전설명 → 언어팩 준비 → 시작.
 /// 각 단계 건너뛰기 가능(온디맨드 폴백 있음). 언어팩=한/영 Speech + 인니 WhisperKit 선다운로드(번역팩은 첫 번역에서 자동).
 struct OnboardingView: View {
     @EnvironmentObject var app: AppModel

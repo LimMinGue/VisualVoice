@@ -5,9 +5,9 @@ import UIKit
 #endif
 import UniformTypeIdentifiers
 
-/// 내보내기 형식 — DOCX는 경량 store-ZIP/OOXML로 무의존 생성(decisions §30 · 2026-07-18).
+/// 내보내기 형식 — DOCX는 경량 store-ZIP/OOXML로 무의존 생성.
 enum ExportFormat: String, CaseIterable {
-    case txt = "TXT", md = "Markdown", pdf = "PDF", docx = "DOCX", json = "JSON"   // JSON = §14 분석 루프용 기계 판독(2026-09-11 B⑦)
+    case txt = "TXT", md = "Markdown", pdf = "PDF", docx = "DOCX", json = "JSON"   // JSON = 분석·후처리용 기계 판독
     var ready: Bool { true }
     var fileExtension: String {
         switch self { case .txt: "txt"; case .md: "md"; case .pdf: "pdf"; case .docx: "docx"; case .json: "json" }
@@ -28,13 +28,13 @@ struct ExportOptions {
     var includeSpeaker = true
     var includeTranslation = true
     var includeMinutes = true
-    var useRefined = true       // 번역 = AI 재번역 우선(줄에 없으면 실시간 자동 폴백 — §11.4)
-    var includeTranscript = true      // 끄면 회의록만 한 장으로(2026-09-11 B⑦) — 시트가 둘 다 끄는 조합을 막는다
+    var useRefined = true       // 번역 = AI 재번역 우선(줄에 없으면 실시간 자동 폴백)
+    var includeTranscript = true      // 끄면 회의록만 한 장으로 — 시트가 둘 다 끄는 조합을 막는다
     var removeFillers = false         // 군말 제거 — 내보내기 전용, 저장·화면 불변(기본 OFF)
-    var replaceRules: [ReplaceRule] = []   // 치환 규칙 — 화면과 같은 값이 문서에도(규칙 4 단일 함수)
+    var replaceRules: [ReplaceRule] = []   // 치환 규칙 — 화면과 같은 값이 문서에도(단일 함수로 적용)
 }
 
-/// 세션 → TXT·MD·PDF·DOCX 파일 (본질 요소 ⑥·⑦ — 토글: 타임코드·화자 라벨·원문+번역).
+/// 세션 → TXT·MD·PDF·DOCX 파일 (토글: 타임코드·화자 라벨·원문+번역).
 enum SessionExporter {
     @MainActor
     static func run(session: Session, format: ExportFormat, options: ExportOptions) {
@@ -52,7 +52,7 @@ enum SessionExporter {
             }
         }
         #else
-        // iOS: 임시 파일 → 공유 시트('파일에 저장'·AirDrop·앱 전달) — NSSavePanel 부재 (decisions §10)
+        // iOS: 임시 파일 → 공유 시트('파일에 저장'·AirDrop·앱 전달) — NSSavePanel 부재
         let safeTitle = session.title.replacingOccurrences(of: "/", with: "-")
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(safeTitle).\(format.fileExtension)")
@@ -65,7 +65,7 @@ enum SessionExporter {
         #endif
     }
 
-    /// 형식별 파일 생성 — macOS 저장 패널·iOS 공유 시트 공용 (규칙 4: 경로 단일화).
+    /// 형식별 파일 생성 — macOS 저장 패널·iOS 공유 시트 공용 (경로 단일화).
     private static func write(session: Session, format: ExportFormat, options: ExportOptions, to url: URL) throws {
         switch format {
         case .txt:
@@ -82,7 +82,7 @@ enum SessionExporter {
         }
     }
 
-    // MARK: JSON — 공개 계약은 내부 Session과 분리(DTO). 내부 필드가 늘어도 이 스키마는 여기서만 바뀐다(파워유저 위원).
+    // MARK: JSON — 공개 계약은 내부 Session과 분리(DTO). 내부 필드가 늘어도 이 스키마는 여기서만 바뀐다.
 
     private struct ExportDoc: Encodable {
         struct Item: Encodable { let text: String; let who: String?; let sourceTimecodes: [String] }
@@ -159,10 +159,10 @@ enum SessionExporter {
         out.append(markdown ? "# \(session.title)" : session.title)
         out.append("\(session.displayDate) · \(session.pairShort) · \(session.segments)구간 · \(session.duration)"
                    + (session.engineLabel.map { " · \($0)" } ?? ""))
-        if let notes = session.notes, !notes.isEmpty {   // 기록 조건도 문서에 — 제3자가 결손을 알 수 있게(§3)
+        if let notes = session.notes, !notes.isEmpty {   // 기록 조건도 문서에 — 제3자가 결손을 알 수 있게
             out.append("기록 조건: " + notes.joined(separator: " / "))
         }
-        // AI 재번역 사용 시 마커 강제 — 제3자가 기계 재번역을 확정본으로 오인하지 않게(워게임 §D)
+        // AI 재번역 사용 시 마커 강제 — 제3자가 기계 재번역을 확정본으로 오인하지 않게
         let hasRefined = session.transcript?.contains { $0.refinedTranslation != nil } ?? false
         if o.useRefined && o.includeTranslation && hasRefined {
             out.append("번역: AI 재번역(온디바이스) · 세션 정지 후 생성 · ✦ = AI가 다시 번역한 줄")
@@ -173,7 +173,7 @@ enum SessionExporter {
             out.append(markdown ? "## 회의록" : "== 회의록 ==")
             if !m.participants.isEmpty {
                 out.append(markdown ? "### 참여 인원" : "[참여 인원]")
-                for p in m.participants {   // '(추정)' 표기 제거(2026-07-18 · UI 배지 제거와 일관). 이름 미상은 추정값 시드.
+                for p in m.participants {   // '(추정)' 표기 제거 — UI 배지 제거와 일관. 이름 미상은 추정값 시드.
                     let suffix = p.showsDetailSuffix ? " · \(p.detail)" : ""
                     out.append("- \(p.speakerLabel) — \(p.displayName)\(suffix)")
                 }
@@ -231,7 +231,7 @@ enum SessionExporter {
         let body = text(session, o, markdown: false)
         let para = NSMutableParagraphStyle()
         para.lineSpacing = 3
-        // PDF 렌더(CGContext+CoreText)는 양 플랫폼 공용 — 글꼴·색 타입만 분기 (decisions §10 개정: UIGraphicsPDFRenderer 불필요)
+        // PDF 렌더(CGContext+CoreText)는 양 플랫폼 공용 — 글꼴·색 타입만 분기(UIGraphicsPDFRenderer 불필요)
         #if os(macOS)
         let font = NSFont.systemFont(ofSize: 11); let color = NSColor.black
         #else

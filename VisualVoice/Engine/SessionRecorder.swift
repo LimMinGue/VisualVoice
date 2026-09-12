@@ -2,20 +2,19 @@ import AVFoundation
 import Foundation
 
 /// 세션 음원 녹음 — 원음(장치가 준 그대로) + 인식 음원(엔진이 실제로 소비한 신호)을 WAV로 남긴다.
-/// (decisions §14 · 워게임 `[2026-07-30]_wargame_session_audio_recording.md` · 목업 컨펌 2026-07-30)
 ///
 /// 제품 기능이 아니라 **진단 계측**이다. 자막·번역이 틀렸을 때 "무엇이 들어왔고 엔진은 무엇을 들었나"를
-/// 증거로 남겨, 합성 TTS에 의존하던 회귀 자산(§13 하네스)을 실사용 녹음으로 대체하는 것이 목적.
+/// 증거로 남겨, 합성 TTS에 의존하던 회귀 자산을 실사용 녹음으로 대체하는 것이 목적.
 /// 두 계통을 함께 남기는 이유: 원음만으로는 변환 단계 고장을 못 잡고(2026-07-17 VP 롤백이 그 사례),
 /// 인식 음원만으로는 마이크 자체 문제와 구분되지 않는다.
 ///
 /// ⚠️ `write` 계열은 **오디오 렌더 스레드**에서 호출된다. 파일 I/O는 전용 직렬 큐로만 나간다 —
-/// 여기서 디스크를 기다리면 버퍼가 드롭되고 그대로 자막 끊김이 된다(워게임 §4-1).
+/// 여기서 디스크를 기다리면 버퍼가 드롭되고 그대로 자막 끊김이 된다.
 final class SessionRecorder {
     enum Stream: String { case mic, system }
     enum Kind: String {
         case raw, asr
-        /// 규칙 6 확정 용어 — 축약·의역 금지.
+        /// 확정된 UI 용어 — 축약·의역 금지.
         var label: String { self == .raw ? "원음" : "인식 음원" }
     }
 
@@ -39,7 +38,7 @@ final class SessionRecorder {
 
         func write(_ buffer: AVAudioPCMBuffer) throws {
             // 포맷 불일치 = 최초 1회이거나, 세션 도중 입력 장치가 바뀐 순간(에어팟 배터리 사망 등).
-            // 그때 쓰기를 포기하면 남은 구간을 통째로 잃으므로 새 파일로 롤오버한다(워게임 §4-8).
+            // 그때 쓰기를 포기하면 남은 구간을 통째로 잃으므로 새 파일로 롤오버한다.
             if format != buffer.format {
                 if format != nil { part += 1 }
                 file = nil                       // 이전 파일 닫기(ARC) — 헤더가 여기서 확정된다
@@ -60,7 +59,7 @@ final class SessionRecorder {
     private var failureReported = false
 
     init(sessionID: UUID, stream: Stream, onFailure: @escaping (String) -> Void) {
-        // 스트림당 큐 1개 — 원음·인식 음원이 같은 큐를 공유해 동시 쓰기가 2개를 넘지 않는다(성능 위원 조건).
+        // 스트림당 큐 1개 — 원음·인식 음원이 같은 큐를 공유해 동시 쓰기가 2개를 넘지 않는다.
         queue = DispatchQueue(label: "visualvoice.record.\(stream.rawValue)", qos: .utility)
         rawTrack = Track(sessionID: sessionID, stream: stream, kind: .raw)
         asrTrack = Track(sessionID: sessionID, stream: stream, kind: .asr)
@@ -169,7 +168,7 @@ extension SessionRecorder {
                   let kind = Kind(rawValue: String(parts[1])) else { return nil }
             return Item(url: url, kind: kind, stream: stream, bytes: size(of: url))
         }
-        // 목업 순서 — 시스템 먼저, 각 스트림 안에서 원음 먼저.
+        // 표시 순서 — 시스템 먼저, 각 스트림 안에서 원음 먼저.
         .sorted { ($0.stream == .system ? 0 : 1, $0.kind == .raw ? 0 : 1, $0.url.lastPathComponent)
                 < ($1.stream == .system ? 0 : 1, $1.kind == .raw ? 0 : 1, $1.url.lastPathComponent) }
     }
@@ -195,21 +194,21 @@ extension SessionRecorder {
 
     // 녹음을 지우는 경로는 **사용자가 세션을 삭제할 때 하나뿐**이다(`AppModel.delete`).
     //
-    // 워게임 §4-3·§4-6은 "빈 세션 폐기 시 동반 삭제"와 "고아 파일 자동 청소"를 계획했으나 **철회했다**
-    // (2026-07-30 자체 검토). 두 가지 이유:
-    //   ① 제작자 컨펌 보관 정책이 "무제한·자동 삭제 없음"이라 자동 삭제 자체가 결정과 어긋난다.
+    // 초기 설계는 "빈 세션 폐기 시 동반 삭제"와 "고아 파일 자동 청소"를 계획했으나 **철회했다**
+    // (2026-07-30). 두 가지 이유:
+    //   ① 보관 정책이 "무제한·자동 삭제 없음"이라 자동 삭제 자체가 그 결정과 어긋난다.
     //   ② 결정적으로, **자막이 한 줄도 안 나온 세션은 빈 세션으로 폐기**되는데(2026-07-17 규칙),
-    //      그 세션이야말로 §13이 쫓는 증상("앞사람 말이 통째로 사라진다")의 유일한 증거다.
+    //      그 세션이야말로 쫓고 있는 증상("앞사람 말이 통째로 사라진다")의 유일한 증거다.
     //      동반 삭제는 가장 분석하고 싶은 녹음을 앱이 먼저 지우는 결과가 된다.
     // 대가: 세션에 붙지 않은 녹음이 남는다(폐기된 빈 세션·크래시). 설정의 총 사용량에 잡히고
     // Finder에서 관리할 수 있으므로 보이지 않는 누수는 아니다.
 
     /// 크래시·강제 종료로 마감되지 않은 WAV 복구.
     ///
-    /// 실측(2026-07-30 · `testkit/recorder_wav_probe.swift`): 파일을 닫지 못하면 **오디오 데이터는
+    /// 실측(2026-07-30): 파일을 닫지 못하면 **오디오 데이터는
     /// 전부 디스크에 남지만** RIFF·data 청크의 크기 필드가 0이라 재생기·재전사 도구가 '0프레임'으로
     /// 읽는다. 두 필드를 실제 길이로 고쳐 쓰면 그대로 살아난다(실측: 80,000프레임 정확히 복구).
-    /// 하필 크래시한 세션이 가장 분석하고 싶은 세션이므로(§13.6 '전사 행' = 강제 종료 유발) 자동으로 한다.
+    /// 하필 크래시한 세션이 가장 분석하고 싶은 세션이므로('전사 행'이 강제 종료를 유발한다) 자동으로 한다.
     ///
     /// ⚠️ 고아 청소와 같은 이유로 **앱 시작 시에만** 부른다 — 진행 중인 세션의 열린 파일을 건드리면 안 된다.
     static func repairInterrupted() {

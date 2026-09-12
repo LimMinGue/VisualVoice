@@ -16,15 +16,15 @@ final class MicTranscriptionEngine {
     var onStatus: ((String) -> Void)?        // 준비 단계 안내(모델 다운로드 등)
     var onRecognitionRestart: (() -> Void)?  // 인식 세션 자동 재시작 직전(잠정 자막 확정 처리용)
 
-    /// 입력원 — 대면 대화=마이크 / 온라인 미팅=시스템 오디오(SCK) / injected=헤드리스 하네스 주입(DEBUG · WindowProbe)
+    /// 입력원 — 대면 대화=마이크 / 온라인 미팅=시스템 오디오(SCK) / injected=헤드리스 테스트 주입(DEBUG)
     enum Source { case mic, systemAudio, injected }
 
     #if DEBUG
-    /// 하네스 전용 진입 — 마이크 탭 콜백과 같은 경로로 버퍼를 넣는다(게이트·창·확정 판정 무수정).
+    /// 테스트 전용 진입 — 마이크 탭 콜백과 같은 경로로 버퍼를 넣는다(게이트·창·확정 판정 무수정).
     func feed(_ buffer: AVAudioPCMBuffer) { process(buffer) }
     #endif
 
-    /// 인식기 — 한/영=Apple SpeechTranscriber, 인니 포함=WhisperKit (decisions §2 엔진 라우팅)
+    /// 인식기 — 한/영=Apple SpeechTranscriber, 인니 포함=WhisperKit (엔진 라우팅)
     enum Recognizer { case apple, whisper }
 
     private let audioEngine = AVAudioEngine()
@@ -32,7 +32,7 @@ final class MicTranscriptionEngine {
     private var systemTap: SystemAudioTap?
     private var usingSystemTap: Bool { systemTap != nil }
     #else
-    private let usingSystemTap = false   // iPad = 마이크 전용, 시스템 오디오 제외 (decisions §10)
+    private let usingSystemTap = false   // iPad = 마이크 전용, 시스템 오디오 제외
     #endif
     private var analyzer: SpeechAnalyzer?
     private var transcriber: SpeechTranscriber?
@@ -47,7 +47,7 @@ final class MicTranscriptionEngine {
     private var bufferCount = 0
     private var lastBufferAt = Date()  // 오디오 스레드에서 갱신 — 워치독 판독용(미세 레이스 허용)
 
-    // ── Whisper 경로 (인니어 — Apple 미지원 언어의 유일한 온디바이스 길, decisions §2) ──
+    // ── Whisper 경로 (인니어 — Apple 미지원 언어의 유일한 온디바이스 길) ──
     private var recognizerKind: Recognizer = .apple
     private var whisper: WhisperKit?
     private var whisperLanguages: [String] = ["id"]   // 1개=고정, 2개=쌍 클램프(둘 중 확률 높은 쪽만)
@@ -56,7 +56,7 @@ final class MicTranscriptionEngine {
     private var whisperPreRoll: [Float] = []          // 게이트 닫힘 중 최근 1초 링 — 어두 절단 방지 (오디오 스레드 전용)
     private var whisperGateWasOpen = false            // 게이트 개방 순간(전이) 감지용
     private let whisperLock = NSLock()
-    // ── 음성 분류 게이트 (SoundAnalysis VAD — wargame 2026-07-17: 소음≈발화 방에서 에너지 게이트 한계 도달) ──
+    // ── 음성 분류 게이트 (SoundAnalysis VAD — 2026-07-17 실측: 소음≈발화 방에서 에너지 게이트 한계 도달) ──
     private var soundAnalyzer: SNAudioStreamAnalyzer?
     private var soundObserver: SpeechClassObserver?    // SNRequest observer는 약참조 — 강참조 유지 필수
     private var speechClassifierReady = false          // false = 페일오픈(에너지 단독)
@@ -68,12 +68,12 @@ final class MicTranscriptionEngine {
     private var whisperBusyWarned = false
     private var whisperLastHypothesis = ""
     private var whisperStableTicks = 0        // 같은 가설 연속 횟수 — 문장 안정 기반 확정
-    /// LocalAgreement(세그먼트 단위) 실험 — 2026-09-11 §15.5-C②. 직전 틱과 **앞부분 세그먼트가 그대로 일치**하고 꼬리는
-    /// 아직 변하는 중이면, 일치한 앞부분만 앞당겨 확정하고 창을 그 끝까지 비운다. 무갭 발화(05·06)가 6초 상한까지 뭉쳐
-    /// 한 줄 garble + 언어 혼입되던 구조적 원인(전체 문자열 일치 2틱 규칙)에 대한 대안. **기본 OFF** — 하네스(WindowProbe)로
-    /// 04 무회귀(중복 0·어두 생존)와 05 개선을 함께 확인한 뒤 제작자 실측·결정. 켜기: 환경변수 VV_LA=1.
-    /// 하네스 실측(2026-09-11): 04 실대화 무회귀(4줄·중복 0·어두 전부 생존) · 05 무갭 1줄 garble → 4줄 정확 · 06 무회귀.
-    /// 켜기: 설정 토글(`vv.localAgreement`) 또는 환경변수 VV_LA=1(하네스). 세션 시작 시 1회 읽는다.
+    /// LocalAgreement(세그먼트 단위) 실험 — 직전 틱과 **앞부분 세그먼트가 그대로 일치**하고 꼬리는
+    /// 아직 변하는 중이면, 일치한 앞부분만 앞당겨 확정하고 창을 그 끝까지 비운다. 무갭 발화가 6초 상한까지 뭉쳐
+    /// 한 줄 garble + 언어 혼입되던 구조적 원인(전체 문자열 일치 2틱 규칙)에 대한 대안. **기본 OFF** —
+    /// 실대화 무회귀(중복 0·어두 생존)와 무갭 개선을 함께 확인한 뒤 실사용 검증으로 결정한다.
+    /// 회귀 테스트 실측(2026-09-11): 실대화 무회귀(4줄·중복 0·어두 전부 생존) · 무갭 1줄 garble → 4줄 정확.
+    /// 켜기: 설정 토글(`vv.localAgreement`) 또는 환경변수 VV_LA=1. 세션 시작 시 1회 읽는다.
     static let localAgreementKey = "vv.localAgreement"
     private static var localAgreement: Bool {
         ProcessInfo.processInfo.environment["VV_LA"] == "1" || UserDefaults.standard.bool(forKey: localAgreementKey)
@@ -82,7 +82,7 @@ final class MicTranscriptionEngine {
     private var whisperStickyLanguage: String?   // 직전 확정 언어(쌍 클램프의 대화 관성)
     /// 전사 게이트 — 이 구간만 Whisper 버퍼에 적재. 발화가 끝나면 유입도 멈춰 문장 확정이 즉시 이뤄짐(핑퐁 리듬).
     ///
-    /// **판정 기준 = 음성 분류(VAD)** — 절대 RMS 임계는 폐기(2026-07-25 실측 확정, decisions §13).
+    /// **판정 기준 = 음성 분류(VAD)** — 절대 RMS 임계는 폐기(2026-07-25 실측 확정).
     /// 구 임계(적재 0.14 / 발화량 0.17)는 마이크 근접 발화 기준이라 거리별 생존율이 벼랑이었다:
     ///   0.5m(나) 94% → **1.0m 0% → 1.5m(앞사람) 0% → 2.0m 0%** (대면 대화에서 상대 답변 전량 폐기).
     /// 임계 조정으로 못 고친다 — 1.5m 발화의 광대역 RMS 0.114 ≈ 방 소음 바닥 0.10이라 에너지 축에서 겹친다
@@ -107,7 +107,7 @@ final class MicTranscriptionEngine {
     private var fedSeconds = 0.0
     private var lastLevelLogAt = Date()
 
-    // ── 화자 분리 (FluidAudio LS-EEND — 워게임 2026-07-17 확정) ──
+    // ── 화자 분리 (FluidAudio LS-EEND — 2026-07-17 확정) ──
     struct SpeakerSegment {
         let speakerIndex: Int
         let start: Double     // 오디오 시계 기준 초
@@ -117,21 +117,20 @@ final class MicTranscriptionEngine {
     var onSpeakerSegments: (([SpeakerSegment]) -> Void)?
     private var diarizer: LSEENDDiarizer?
     private var diarSamples: [Float] = []
-    private var diarClockOrigin: Double = -1   // 디아라이저 첫 공급 시 audioClock — 세그먼트 시각(누적)↔자막 시계 정렬(Route B #3, 2026-07-18 QC 실측)
+    private var diarClockOrigin: Double = -1   // 디아라이저 첫 공급 시 audioClock — 세그먼트 시각(누적)↔자막 시계 정렬(2026-07-18 실측)
     private let diarLock = NSLock()
     private var diarTask: Task<Void, Never>?
     /// 공급된 오디오 누적 초 — 자막↔화자 세그먼트 정렬용 공통 시계
     private(set) var audioClock: Double = 0
     private var lastLoudBufferAt = Date()             // 무음 분절 판단(오디오 스레드 기준)
     /// 2026-07-17 상향: small → large-v3 turbo 632MB — 원문 대조 실측에서 치환 오류(따뜻해→짰다·익숙→이식) 확인.
-    /// turbo = 얇은 디코더(large급 정확도·small급에 근접한 속도). `(whisperkit_model)` 소프트 변수 소진.
+    /// turbo = 얇은 디코더(large급 정확도·small급에 근접한 속도).
     /// 단일 상수(2026-09-11) — preheatWhisper의 복사본 리터럴과 세션 메타(modelUsed)가 이 값을 공유한다.
-    /// 출처: HF `argmaxinc/whisperkit-coreml` — 리비전 미핀(WhisperKit이 폴더명으로만 조회, §15.5-A⑧).
-    /// SpectaLing 라이브 기본값도 정확히 같은 모델(설정 화면 실측 "Large v3 Turbo (Compact) 632MB").
+    /// 출처: HF `argmaxinc/whisperkit-coreml` — 리비전 미핀(WhisperKit이 폴더명으로만 조회).
     static let whisperModelName = "large-v3-v20240930_turbo_632MB"
     private var whisperModel: String { Self.whisperModelName }
 
-    // ── Whisper 공유 (decisions §12 `(whisper_공유)` — 온라인 미팅 2엔진의 632MB 이중 로드 방지) ──
+    // ── Whisper 공유 — 온라인 미팅 2엔진의 632MB 이중 로드 방지 ──
     // 인스턴스 1개를 전 엔진이 공유(메모이즈 — 세션 간 재로드도 제거) + transcribe 구간 전역 직렬화.
     // 직렬화는 대기 큐 없이 "놓치면 다음 틱(0.45초)에 재시도" — 기존 whisperBusy와 같은 스킵 문법.
     private static let sharedWhisperLock = NSLock()
@@ -165,7 +164,7 @@ final class MicTranscriptionEngine {
         }
     }
 
-    /// 재전사(RecordingTranscriber)용 공유 파이프 접근 — 로드·캐시 규약 동일, 추가 다운로드 없음(2026-09-11 B④).
+    /// 재전사(RecordingTranscriber)용 공유 파이프 접근 — 로드·캐시 규약 동일, 추가 다운로드 없음(2026-09-11).
     static func sharedWhisperPipe(onStatus: ((String) -> Void)? = nil) async throws -> WhisperKit {
         try await sharedWhisper(model: whisperModelName, onStatus: onStatus)
     }
@@ -192,12 +191,12 @@ final class MicTranscriptionEngine {
     /// 마지막 오디오 버퍼 이후 경과 — AppModel 워치독이 "입력이 끊겼는데 세션은 산 척"을 감지
     var secondsSinceLastBuffer: TimeInterval { Date().timeIntervalSince(lastBufferAt) }
 
-    /// 읽어주기(TTS) 재생 중 마이크 차단 — 자기 소리 재자막 루프 방지(§1-⑧).
+    /// 읽어주기(TTS) 재생 중 마이크 차단 — 자기 소리 재자막 루프 방지.
     /// 시스템 오디오는 SCK가 자기 프로세스 소리를 제외하므로 마이크 탭만 차단. (쓰기=메인, 읽기=오디오 스레드 — Bool 단순 경합 허용)
     var micMuted = false
 
     /// 세션 음원 녹음 — nil이면 녹음하지 않는다(설정 토글). 전사 판정에는 일절 관여하지 않는 읽기 분기.
-    /// 소유·수명은 AppModel(세션 시작 시 주입, stop()에서 마감) — decisions §14.
+    /// 소유·수명은 AppModel(세션 시작 시 주입, stop()에서 마감).
     var recorder: SessionRecorder?
 
     private var lastKickAt = Date.distantPast
@@ -302,17 +301,17 @@ final class MicTranscriptionEngine {
         switch source {
         case .mic:
             #if os(iOS)
-            // iOS는 오디오 세션 명시 활성 필요(macOS엔 없는 개념) — 녹음+재생(읽어주기 TTS) 동시 (decisions §10)
+            // iOS는 오디오 세션 명시 활성 필요(macOS엔 없는 개념) — 녹음+재생(읽어주기 TTS) 동시
             let avSession = AVAudioSession.sharedInstance()
             try avSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
             try avSession.setActive(true)
             #endif
             let input = audioEngine.inputNode
             // 음성 처리(VP)는 2026-07-17 실측 회귀로 롤백: 켜면 레벨 미터는 움직이나 자막 전무.
-            // TTS 자기 소리 재자막 차단은 VP 대신 '재생 중 입력 무시' 플래그로 해결 예정(§1-⑧ 계획대로).
+            // TTS 자기 소리 재자막 차단은 VP 대신 '재생 중 입력 무시' 플래그로 해결.
             let micFormat = input.outputFormat(forBus: 0)
             input.installTap(onBus: 0, bufferSize: 4096, format: micFormat) { [weak self] buffer, _ in
-                guard let self, !self.micMuted else { return }   // 읽어주기(TTS) 재생 중 마이크 차단 (§1-⑧)
+                guard let self, !self.micMuted else { return }   // 읽어주기(TTS) 재생 중 마이크 차단
                 self.process(buffer)
             }
             audioEngine.prepare()
@@ -329,7 +328,7 @@ final class MicTranscriptionEngine {
             }
             onStatus?("듣는 중 (마이크)")
         case .injected:
-            onStatus?("주입 모드(하네스) — feed()로 버퍼 공급")   // 탭·엔진 없음. stop()의 removeTap은 무해(설치된 탭 없음)
+            onStatus?("주입 모드 — feed()로 버퍼 공급")   // 탭·엔진 없음. stop()의 removeTap은 무해(설치된 탭 없음)
         case .systemAudio:
             #if os(macOS)
             onStatus?("화면 기록 권한 확인 중… (시스템 오디오 캡처에 필요)")
@@ -340,12 +339,12 @@ final class MicTranscriptionEngine {
             systemTap = tap
             onStatus?("캡처 시작 — 소리가 나면 자막이 시작됩니다")
             #else
-            throw EngineError.systemAudioUnavailable   // iPad UI엔 진입 경로 없음 — 방어선 (decisions §10)
+            throw EngineError.systemAudioUnavailable   // iPad UI엔 진입 경로 없음 — 방어선
             #endif
         }
 
         // 화자 분리 초기화 — 백그라운드, 실패해도 자막은 계속(소프트 실패). 자막이 먼저, 화자 라벨은 준비되는 대로.
-        // 온라인 미팅의 마이크 엔진은 diarization=false — 마이크 확정=무조건 '나'라 분리기 불필요 (decisions §12).
+        // 온라인 미팅의 마이크 엔진은 diarization=false — 마이크 확정=무조건 '나'라 분리기 불필요.
         guard diarization else { return }
         Task { [weak self] in
             guard let self else { return }
@@ -399,15 +398,15 @@ final class MicTranscriptionEngine {
             .appendingPathComponent("huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-\(whisperModel)")
         let hasCache = FileManager.default.fileExists(atPath: cachedFolder.path)
         onStatus?(hasCache ? "Whisper 모델 로딩 중…" : "Whisper 모델 다운로드 중… (최초 1회, 네트워크 필요)")
-        // 공유 파이프(§12 (whisper_공유)) — 2엔진 동시 세션도, 다음 세션도 로드 1회.
+        // 공유 파이프 — 2엔진 동시 세션도, 다음 세션도 로드 1회.
         let pipe = try await Self.sharedWhisper(model: whisperModel, onStatus: onStatus)
         whisper = pipe
         // 분석기 포맷 = Whisper 기대 입력(16kHz mono Float32) — 기존 변환 파이프라인 재사용
         analyzerFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
                                        sampleRate: 16000, channels: 1, interleaved: false)
-        // 음성 분류 게이트(wargame 2026-07-17) — 소음≈발화 방에서 에너지 게이트의 구조적 방어선. 실패 시 페일오픈.
+        // 음성 분류 게이트(2026-07-17 실측) — 소음≈발화 방에서 에너지 게이트의 구조적 방어선. 실패 시 페일오픈.
         if let fmt = analyzerFormat, let request = try? SNClassifySoundRequest(classifierIdentifier: .version1) {
-            request.windowDuration = CMTime(seconds: 0.75, preferredTimescale: 16_000)   // (분류_창) 소프트 변수
+            request.windowDuration = CMTime(seconds: 0.75, preferredTimescale: 16_000)   // 분류 창 길이(조정 가능)
             request.overlapFactor = 0.5
             let analyzer = SNAudioStreamAnalyzer(format: fmt)
             let observer = SpeechClassObserver { [weak self] in self?.lastSpeechClassAt = Date() }
@@ -456,9 +455,9 @@ final class MicTranscriptionEngine {
 
         // 발화량 게이트 — 창에 '사람 말'이 (발화량요구)초 미만이면 전사 생략·폐기.
         // 발화 직후 꼬리 무음 창이 통과해 "Terima kasih." 환각을 지어내던 문제 차단 (2026-07-17 실측).
-        // 소음이 확정에 도달할 수 없어 문맥 리셋(구 가드④)은 불필요 — 폐기(decisions §7 개정).
+        // 소음이 확정에 도달할 수 없어 문맥 리셋(구 가드④)은 불필요 — 폐기.
         // 누적 기준은 2026-07-25에 RMS>0.17 → VAD 판정으로 교체(speechDetected) — 구 기준은 원거리 발화가
-        // 0.17을 영영 못 넘어 상대 답변이 전량 폐기됐다(거리별 생존율 1.0m부터 0%, decisions §13).
+        // 0.17을 영영 못 넘어 상대 답변이 전량 폐기됐다(거리별 생존율 1.0m부터 0%).
         let bufferSec = Double(samples.count) / 16000.0
         // 창 단위 재확인 — 적재는 버퍼 단위 VAD로 걸렀고, 여기선 창 구간에 분류 이력이 살아있는지 본다.
         // (유효_시간) 창 길이+1.0초 · 페일오픈: 분류기 없으면 에너지 단독.
@@ -467,7 +466,7 @@ final class MicTranscriptionEngine {
         // (발화량요구) 0.7초 — 임의값 아니라 신선도(0.6초)에서 유도된 값이다. 분류 1회는 voiced를 최대
         // 0.6초만 켜므로, 요구가 그보다 커야 '단발 오검출(의자 끄는 소리 등)이 게이트를 혼자 통과'하는
         // 경로가 닫힌다 — 사실상 분류 2회(≈실제 발화 0.75초)를 요구하는 것과 같다.
-        // 실측 비용(하네스 4자산): 원거리 생존율 92% → 90%, 근접 변화 없음. 구 0.3초는 단발로 통과했다.
+        // 실측 비용(테스트 음원 4종): 원거리 생존율 92% → 90%, 근접 변화 없음. 구 0.3초는 단발로 통과했다.
         if loudSeconds < 0.7 || !speechSeen {
             // 발화 램프업 유보: 게이트가 열려 있는 동안은 폐기하지 않고 대기 —
             // 첫 틱(말소리 아직 0.3초 미만)에 어두를 버리던 경로 차단 (2026-07-17 원문 대조 실측).
@@ -488,7 +487,7 @@ final class MicTranscriptionEngine {
             return
         }
 
-        // 전역 직렬화(§12 (whisper_공유)) — 다른 엔진이 공유 파이프로 전사 중이면 이번 틱 스킵(0.45초 뒤 재시도)
+        // 전역 직렬화 — 다른 엔진이 공유 파이프로 전사 중이면 이번 틱 스킵(0.45초 뒤 재시도)
         guard Self.acquireTranscribe() else { return }
         whisperBusy = true
         whisperBusySince = Date()
@@ -502,7 +501,7 @@ final class MicTranscriptionEngine {
             options.detectLanguage = true             // 쌍 세션 — 일단 자동 감지
         }
         // 문맥 조건화(A안) 비활성(2026-07-17 TTS 실측): turbo+promptTokens가 오류 없이 빈 결과를 반환 —
-        // 같은 언어 확정 2건 후 해당 언어 자막이 통째로 블랙아웃(한·인니 양쪽 재현). decisions §7 개정 기록.
+        // 같은 언어 확정 2건 후 해당 언어 자막이 통째로 블랙아웃(한·인니 양쪽 재현).
         // 재검토 조건: WhisperKit 프롬프트×turbo 호환 자체 실측 후. 치환 오류는 turbo 상향으로 해결 여부 채점 중.
         var results: [TranscriptionResult]
         do {
@@ -528,7 +527,7 @@ final class MicTranscriptionEngine {
             }
         }
         // 창이 전사 중에 무효화됐으면 결과를 통째로 버린다 — 스냅샷 좌표로 트림하면 그새 들어온 발화를
-        // 지우고(Route A 꼬리 보존도 무효), 발신하면 이미 꺼진 마이크에서 '나' 자막이 새로 뜬다.
+        // 지우고(꼬리 보존도 무효), 발신하면 이미 꺼진 마이크에서 '나' 자막이 새로 뜬다.
         guard whisperLock.withLock({ audioGeneration }) == generation else {
             NSLog("VV whisper: 전사 중 창 무효화 — 결과 폐기(세대 %d)", generation)
             return
@@ -540,7 +539,7 @@ final class MicTranscriptionEngine {
         for result in results { allSegments.append(contentsOf: result.segments) }
         var trustedParts: [String] = []
         var trustedEnds: [Double] = []   // 세그먼트별 끝 시각 — LA 접두 확정의 트림 좌표
-        var lastRenderedEnd = 0.0   // Route A(§8): 마지막으로 렌더된 신뢰 세그먼트 끝(초) — 미렌더 꼬리 보존 앵커
+        var lastRenderedEnd = 0.0   // 마지막으로 렌더된 신뢰 세그먼트 끝(초) — 미렌더 꼬리 보존 앵커
         for seg in allSegments {
             let trusted = seg.noSpeechProb < 0.5 && seg.avgLogprob > -1.1 && seg.compressionRatio < 2.4
             guard trusted else { continue }
@@ -556,7 +555,7 @@ final class MicTranscriptionEngine {
         // ── LocalAgreement(세그먼트 단위 · 실험 · 기본 OFF) — 앞부분이 직전 틱과 그대로면 그만큼만 앞당겨 확정 ──
         // 창 전체가 일치하면 아래 기존 안정(stableTicks) 경로가 처리한다. 여기선 '앞 k개 일치 + 꼬리 변동 중'만.
         // 조건: k ≥ 1이고 접두가 문장 부호로 끝나거나 k ≥ 2(부호 없는 짧은 조각 단독 확정 방지). 트림은 k번째 세그먼트 끝까지 —
-        // 렌더된 부분만 비우므로 경계 중복은 구조적으로 없고(Route A와 같은 성질), 어두 생존은 하네스가 판정한다.
+        // 렌더된 부분만 비우므로 경계 중복은 구조적으로 없고(꼬리 보존 트림과 같은 성질), 어두 생존은 회귀 테스트가 판정한다.
         if Self.localAgreement, trustedParts.count >= 2, !whisperPrevSegments.isEmpty {
             var k = 0
             while k < min(trustedParts.count, whisperPrevSegments.count), trustedParts[k] == whisperPrevSegments[k] { k += 1 }
@@ -569,7 +568,7 @@ final class MicTranscriptionEngine {
                     whisperLock.withLock {
                         whisperSamples.removeFirst(min(removeCount, whisperSamples.count))
                         // 꼬리는 방금 렌더된 신뢰 세그먼트 = 실제 발화. 발화량요구(0.7초) 아래로 내리면 게이트가 닫히는 순간
-                        // 유보 guard가 꼬리를 통째로 폐기한다(2026-09-11 하네스 실측: 05의 4번째 문장 소실) → 하한 0.7 보장.
+                        // 유보 guard가 꼬리를 통째로 폐기한다(2026-09-11 실측: 무갭 음원의 4번째 문장 소실) → 하한 0.7 보장.
                         whisperLoudSeconds = max(0.7, whisperLoudSeconds - cutEnd)
                     }
                     let tail = trustedParts[k...].joined(separator: " ")
@@ -605,10 +604,10 @@ final class MicTranscriptionEngine {
                       text.count, String(text.prefix(12)), silentFor, whisperStableTicks, bufferSec,
                       endsSentence ? 1 : 0, continuation ? 1 : 0)
             }
-            // Route A(오버랩 포스트롤 — decisions §8): 전사한 창 전량이 아니라 '마지막 렌더 세그먼트 끝'까지만
+            // 오버랩 포스트롤: 전사한 창 전량이 아니라 '마지막 렌더 세그먼트 끝'까지만
             // 비우고, 그 이후 미렌더 꼬리(=다음 발화 어두)를 다음 창에 남긴다 → 경계 침범(첫 단어 삼킴) 방지.
             // 렌더된 부분만 지우므로 경계 단어 중복이 구조적으로 없음(dedup 조건 by construction 충족).
-            // 단순화: 꼬리 보존 상한 2초(무음 꼬리 통째 보존·창 무한 성장 차단) — 소프트 변수 (경계_오버랩).
+            // 단순화: 꼬리 보존 상한 2초(무음 꼬리 통째 보존·창 무한 성장 차단) — 조정 가능 값.
             // 신뢰 세그 0 또는 렌더가 창 전체를 덮으면 종전대로 전량 비움 폴백.
             let renderedSamples = Int(lastRenderedEnd * 16000)
             let removeCount = (renderedSamples > 0 && renderedSamples < samples.count)
@@ -633,7 +632,7 @@ final class MicTranscriptionEngine {
 
     /// 무음·소음에서 나오는 위스퍼 단골 환각 문구(유튜브 마무리 멘트 학습 잔재).
     /// 정규화(소문자·기호 제거) 후 **완전 일치만** 폐기 — 부분 일치 금지(진짜 발화 "감사합니다, 시작하죠" 보호).
-    /// "terima kasih" 단독 등 실대화 표현은 절대 수록 금지(언어학자 검토).
+    /// "terima kasih" 단독 등 실대화 표현은 절대 수록 금지.
     /// 단순화: 실측에서 새 문구가 확인될 때만 추가. 파일 전사 모드 도입 시 모드별 예외 재검토.
     private static let stockHallucinations: Set<String> = [
         // 인니·말레이
@@ -643,8 +642,8 @@ final class MicTranscriptionEngine {
         // 한국어
         "시청해주셔서감사합니다", "끝까지시청해주셔서감사합니다",
         "구독과좋아요부탁드립니다", "다음영상에서만나요",
-        // 2026-09-11 SpectaLing 실물 사전에서 확인된 한국어 항목 4종 — 괄호 없는 비음성 라벨은
-        // cleanHallucinations(괄호 전용)가 못 걷어내므로 완전 일치 사전이 유일한 방어선.
+        // 괄호 없는 비음성 라벨 4종 — cleanHallucinations(괄호 전용)가 못 걷어내므로
+        // 완전 일치 사전이 유일한 방어선.
         "구독과좋아요부탁해요", "음악소리", "웃음소리", "박수소리",
         // 영어
         "thanksforwatching", "thankyouforwatching", "thankyousomuchforwatching",
@@ -664,7 +663,7 @@ final class MicTranscriptionEngine {
         func request(_ request: SNRequest, didProduce result: SNResult) {
             guard let r = result as? SNClassificationResult,
                   let speech = r.classification(forIdentifier: "speech"),
-                  speech.confidence > 0.40 else { return }   // (분류_신뢰도) 소프트 변수
+                  speech.confidence > 0.40 else { return }   // 분류 신뢰도 임계(조정 가능)
             // 0.55→0.40 (2026-07-25 실측): 원거리 발화는 신뢰도도 같이 떨어진다(1.5m 평균 0.58·2.0m 0.46).
             // 0.55에선 2.0m 검출이 25~51%로 무너지고 0.40이면 87~98%. 대가 없음 — 순수 소음 60초 오검출은
             // 0.55·0.40·0.30 전부 0%였다(임계를 더 낮춰도 이득이 없어 0.40에서 멈춤).
@@ -749,7 +748,7 @@ final class MicTranscriptionEngine {
     private func speechDetected(rms: Float) -> Bool {
         guard rms > silenceFloor else { return false }   // 음소거·무신호는 어느 경로든 게이트 닫힘
         // 근접 전용 스트림(온라인 미팅의 '내 마이크')은 절대 임계를 유지한다 — 이 스트림의 확정은
-        // 화자 분리 없이 무조건 '나'라서, 감도를 올리면 2m 밖 타인 발화가 '나' 자막으로 기록된다(§12).
+        // 화자 분리 없이 무조건 '나'라서, 감도를 올리면 2m 밖 타인 발화가 '나' 자막으로 기록된다.
         guard !nearFieldOnly else { return rms > whisperGate }
         return speechClassifierReady ? Date().timeIntervalSince(lastSpeechClassAt) < 0.6
                                      : rms > whisperGate
@@ -839,7 +838,7 @@ final class MicTranscriptionEngine {
         }
         if convError == nil, out.frameLength > 0 {
             // 인식 음원 — 게이트 분기보다 앞이라 **게이트가 버린 소리까지** 남는다.
-            // "앞사람이 분명 말했는데 자막이 없다"를 증거로 가릴 수 있는 유일한 지점(§13 실측 검증).
+            // "앞사람이 분명 말했는데 자막이 없다"를 증거로 가릴 수 있는 유일한 지점(실측 검증).
             recorder?.write(asr: out)
             audioClock += Double(out.frameLength) / analyzerFormat.sampleRate   // 자막↔화자 공통 시계
             // 화자 분리 공급 — 게이트와 무관하게 전체 오디오(라디오·타인 화자도 식별해야 숨길 수 있음)
@@ -875,7 +874,7 @@ final class MicTranscriptionEngine {
                     // 무너져 팬·에어컨 소음(0.15)만으로 전사 자격이 생긴다 — 그 모드에선 0.17을 유지한다.
                     // ⚠️ `!nearFieldOnly`가 빠지면 안 된다: 근접 전용 스트림의 voiced도 에너지(0.14)로
                     // 축약되므로, 분류기가 살아 있다는 이유로 단락되면 2단이 0.14 1단으로 무너진다.
-                    // 실측(하네스 근접전용 모드): 그 상태에서 1m 거리 타인 발화가 0% → 76%로 전사에 도달했다.
+                    // 실측(근접 전용 모드): 그 상태에서 1m 거리 타인 발화가 0% → 76%로 전사에 도달했다.
                     if voiced, (speechClassifierReady && !nearFieldOnly) || rms > 0.17 {
                         whisperLoudSeconds += Double(out.frameLength) / analyzerFormat.sampleRate
                     }

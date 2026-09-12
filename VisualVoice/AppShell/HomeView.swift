@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 홈 — 언어 쌍·엔진 선택 + 캡처 모드 타일 + 최근 세션 (decisions.md §5).
+/// 홈 — 언어 쌍·엔진 선택 + 캡처 모드 타일 + 최근 세션.
 struct HomeView: View {
     @EnvironmentObject var app: AppModel
     @State private var pendingDelete: Session?
@@ -15,7 +15,7 @@ struct HomeView: View {
                         .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink3)
                 }
 
-                // 세션 종료 후 1회 고지(무자막 세션 등) — 무고지 홈 복귀 금지(§3 · 2026-09-11). 다음 세션 시작 시 소멸.
+                // 세션 종료 후 1회 고지(무자막 세션 등) — 무고지 홈 복귀 금지(2026-09-11). 다음 세션 시작 시 소멸.
                 if let notice = app.homeNotice {
                     NoticeBanner(text: notice, color: Theme.warn, icon: "text.bubble", style: .card)
                 }
@@ -23,9 +23,9 @@ struct HomeView: View {
                 setupBar
 
                 #if os(iOS)
-                startConversationButton   // iPad = 마이크 전용 — 타일 그리드 대신 큰 시작 버튼 (decisions §10)
+                startConversationButton   // iPad = 마이크 전용 — 타일 그리드 대신 큰 시작 버튼
                 #else
-                // 2×2 고정 — 4개 타일의 공간 안정감 (2026-07-17 제작자 교정)
+                // 2×2 고정 — 4개 타일의 공간 안정감 (2026-07-17)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
                     ForEach(CaptureMode.allCases) { mode in captureTile(mode) }
                 }
@@ -54,7 +54,7 @@ struct HomeView: View {
         }
     }
 
-    // 세션 언어 — 언어 1·언어 2 드롭다운 2개. 같으면 자막만, 다르면 자막+번역 (2026-07-17 제작자 교정 4차).
+    // 세션 언어 — 언어 1·언어 2 드롭다운 2개. 같으면 자막만, 다르면 자막+번역 (2026-07-17).
     private var setupBar: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
@@ -80,7 +80,7 @@ struct HomeView: View {
 
                 HStack(spacing: 8) {
                     Text("엔진 자동").font(.system(size: 13, weight: .semibold))
-                    // "ANE" 표기는 decisions §2가 정정한 표현 — "온디바이스"로 통일(2026-07-17)
+                    // "ANE" 대신 "온디바이스"로 표기 통일(2026-07-17)
                     Text("온디바이스").font(.system(size: 10, weight: .heavy, design: .rounded))
                         .foregroundStyle(Theme.accent)
                         .padding(.horizontal, 6).padding(.vertical, 2)
@@ -163,13 +163,13 @@ struct HomeView: View {
                         .overlay(Capsule().stroke(Theme.hair))
                         .padding(12)
                 }
-                // ("Zoom 감지됨" 목업 배지 제거 — 실제 감지 로직 배선 전까지 표시 안 함. 거짓 안내 금지)
+                // ("Zoom 감지됨" 배지 제거 — 실제 감지 로직 배선 전까지 표시 안 함. 거짓 안내 금지)
             }
         }
         .buttonStyle(.plain)
     }
 
-    /// iPad 분기 — 터치(호버 없음)·마이크 전용 (decisions §10 · 목업 컨펌 2026-07-18)
+    /// iPad 분기 — 터치(호버 없음)·마이크 전용
     private var isPad: Bool {
         #if os(iOS)
         true
@@ -179,7 +179,7 @@ struct HomeView: View {
     }
 
     #if os(iOS)
-    /// 캡처 타일 대신 큰 '대화 시작' 버튼 — iPad는 대면 대화(마이크) 전용 (decisions §10 · 목업 컨펌).
+    /// 캡처 타일 대신 큰 '대화 시작' 버튼 — iPad는 대면 대화(마이크) 전용.
     private var startConversationButton: some View {
         Button { app.start(.inPerson) } label: {
             HStack(spacing: 14) {
@@ -235,7 +235,7 @@ struct HomeView: View {
                 Image(systemName: "trash")
                     .font(.system(size: isPad ? 14 : 11, weight: .semibold))
                     .foregroundStyle(Theme.rec)
-                    .frame(width: isPad ? 44 : 26, height: isPad ? 44 : 26)   // iPad 터치 타깃 44pt (decisions §10)
+                    .frame(width: isPad ? 44 : 26, height: isPad ? 44 : 26)   // iPad 터치 타깃 44pt
                     .background(Theme.rec.opacity(0.12), in: RoundedRectangle(cornerRadius: isPad ? 10 : 7))
             }
             .buttonStyle(.plain)

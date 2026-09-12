@@ -1,7 +1,7 @@
-#if os(macOS)  // 팝아웃 = 항상-위 플로팅 창 — iPad 제외 (decisions §10)
+#if os(macOS)  // 팝아웃 = 항상-위 플로팅 창 — iPad 제외
 import SwiftUI
 
-/// "패널로 띄우기" 팝아웃 — 항상-위 플로팅, 줌 위에 겹쳐 보기 (decisions.md §5·§6).
+/// "패널로 띄우기" 팝아웃 — 항상-위 플로팅, 줌 위에 겹쳐 보기.
 /// 창 안 라이브 뷰와 동일한 CaptionStreamView를 공용으로 쓴다.
 struct FloatingCaptionPanel: View {
     @EnvironmentObject var app: AppModel
@@ -13,7 +13,7 @@ struct FloatingCaptionPanel: View {
                 Circle().fill(Theme.rec).frame(width: 8, height: 8)
                 Text("실시간 자막")
                     .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                if app.popoutAutoShown {   // 창 가림으로 자동 표시됐음을 정직하게 표기 (decisions §8)
+                if app.popoutAutoShown {   // 창 가림으로 자동 표시됐음을 정직하게 표기
                     Text("자동")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(Theme.accent)
@@ -31,7 +31,7 @@ struct FloatingCaptionPanel: View {
             CaptionStreamView(lines: app.visibleLiveLines, compact: true)
                 .padding(.horizontal, 12).padding(.vertical, 10)
             Rectangle().fill(Theme.hair).frame(height: 1)
-            // 미니 컨트롤바 — §6 "글자 크기·배경 불투명도 상시 노출" 규약 충족 (2026-07-17 수정)
+            // 미니 컨트롤바 — "글자 크기·배경 불투명도 상시 노출" 규약 충족
             HStack(spacing: 8) {
                 Button { settings.fontScale = max(0.7, settings.fontScale - 0.1) } label: {
                     Text("A−").font(.system(size: 10.5, weight: .semibold, design: .rounded))

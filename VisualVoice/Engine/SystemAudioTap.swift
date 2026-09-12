@@ -1,10 +1,10 @@
-#if os(macOS)  // 시스템 오디오 캡처(SCK) — iPad 제외 범위 (decisions §10)
+#if os(macOS)  // 시스템 오디오 캡처(SCK) — iPad 제외 범위
 import ScreenCaptureKit
 import AVFoundation
 import CoreGraphics
 import CoreAudio
 
-/// 시스템(다른 앱) 오디오 캡처 — ScreenCaptureKit 경로 (decisions §2: 미팅 캡처 기본, 실측 검증 대상).
+/// 시스템(다른 앱) 오디오 캡처 — ScreenCaptureKit 경로 (미팅 캡처 기본, 실측 검증 대상).
 /// 영상 프레임은 받아서 즉시 버림(오디오 전용 등록 시 스트림이 조용히 멈추는 사례 대응). 자기 프로세스 오디오 제외.
 final class SystemAudioTap: NSObject, SCStreamOutput, SCStreamDelegate {
     private var stream: SCStream?
@@ -82,7 +82,7 @@ final class SystemAudioTap: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 }
 
-/// 기본 출력이 '내장 스피커'인지 — 이중 자막 경고 배너 판정 (decisions §12 `(이중자막_방어_v1)`).
+/// 기본 출력이 '내장 스피커'인지 — 이중 자막 경고 배너 판정.
 /// 에어팟(블루투스)·외장 장치는 false. 내장 3.5mm 헤드폰은 transport가 같아 dataSource('ispk')로 구분.
 /// 조회 실패 시 false — 거짓 경고 금지(확실할 때만 배너).
 enum OutputRoute {

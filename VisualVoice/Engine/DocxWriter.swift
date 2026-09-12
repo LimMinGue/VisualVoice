@@ -1,6 +1,6 @@
 import Foundation
 
-/// 세션 녹취록·회의록 → .docx (OOXML) — 무의존 생성 (decisions §30, 2026-07-18).
+/// 세션 녹취록·회의록 → .docx (OOXML) — 무의존 생성.
 /// 본문은 `SessionExporter.text(markdown:true)`를 그대로 중간표현으로 재사용한다 — 기존 TXT/MD/PDF
 /// 빌더는 한 줄도 건드리지 않고, 마크다운 접두어(`#`/`##`/`- ` 등)만 Word 문단 스타일로 매핑한다.
 /// ZIP은 store(무압축)+CRC32 손구현 — macOS에 공개 ZIP 쓰기 API가 없고 NSFileCoordinator는 항목을
@@ -73,7 +73,7 @@ enum DocxWriter {
         "<w:spacing w:before=\"\(before)\" w:after=\"\(after)\"/>"
     }
 
-    /// XML 1.0 이스케이프 — & < > " 치환 + 유효하지 않은 제어문자 폐기(파일 손상 방지, QC 조건).
+    /// XML 1.0 이스케이프 — & < > " 치환 + 유효하지 않은 제어문자 폐기(파일 손상 방지).
     private static func xmlEscape(_ s: String) -> String {
         var out = ""
         out.reserveCapacity(s.count + 8)

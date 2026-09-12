@@ -2,7 +2,7 @@ import SwiftUI
 import Translation
 import NaturalLanguage
 
-/// 확정 자막 → 상대 언어 번역 배선 (decisions §2: 자체 STT→번역 파이프라인, 문장 단위).
+/// 확정 자막 → 상대 언어 번역 배선 (자체 STT→번역 파이프라인, 문장 단위).
 /// Translation framework는 SwiftUI translationTask가 공식 경로 — 큐 + invalidate 트리거 패턴.
 /// 쌍(A⇄B)의 두 방향을 별도 세션(config)으로 운용, 발화별 언어는 NLLanguageRecognizer로 자동 감지.
 @MainActor
@@ -15,14 +15,14 @@ final class TranslationCoordinator: ObservableObject {
     private var queueBtoA: [Job] = []
     private var pair = LanguagePair.koOnly
 
-    // 실패·적체 대응(2026-09-11 · SpectaLing 대조 §15.3 ④ — 구 코드는 실패가 NSLog 한 줄, 큐는 상한 없음).
-    // 배너는 연속 3회부터(청각 당사자 위원: 매 실패 노출은 자막 읽기 방해), 회복되면 자동 소멸.
-    // 버려진 줄은 회복돼도 되살아나지 않으므로 별도 계수(Tester 조건 — 조용한 사라짐 금지).
+    // 실패·적체 대응(2026-09-11 — 구 코드는 실패가 NSLog 한 줄, 큐는 상한 없음).
+    // 배너는 연속 3회부터(매 실패 노출은 자막 읽기 방해), 회복되면 자동 소멸.
+    // 버려진 줄은 회복돼도 되살아나지 않으므로 별도 계수(조용한 사라짐 금지).
     @Published private(set) var runtimeFailure: String?   // 라이브 배너 문구(nil=정상)
     @Published private(set) var failedCount = 0             // 세션 누적 실패 줄 수 — Session.notes용
     @Published private(set) var droppedCount = 0            // 큐 상한 초과로 버린 줄 수
     private var consecutiveFailures = 0
-    private static let queueCap = 200                       // (번역큐상한) 소프트 변수
+    private static let queueCap = 200                       // 조정 가능한 소프트 상한
 
     /// 번역 결과 반영 콜백 (lineID, 번역문) — AppModel이 liveLines에 기록
     var apply: ((UUID, String) -> Void)?
@@ -35,8 +35,8 @@ final class TranslationCoordinator: ObservableObject {
         let aLang = Locale.Language(identifier: pair.a.code)
         let bLang = Locale.Language(identifier: pair.b.code)
         // .highFidelity = Apple Intelligence 기반 '더 유창한' 번역(vs .lowLatency 전통 MT).
-        // 워게임 2026-07-19: 실시간 문맥 창은 Apple Translation에 문맥 API가 없어 불가 → 실시간에서 가능한
-        // 유일한 품질 레버가 이 전략 전환(§11.1 개정). init(preferredStrategy:)는 26.4+ → 미만/미지원 언어쌍은 기본 폴백.
+        // 실시간 문맥 창은 Apple Translation에 문맥 API가 없어 불가 → 실시간에서 가능한
+        // 유일한 품질 레버가 이 전략 전환. init(preferredStrategy:)는 26.4+ → 미만/미지원 언어쌍은 기본 폴백.
         // 단순화: 지연이 문제로 실측되면 이 분기를 제거해 기본 전략으로 되돌린다.
         if #available(macOS 26.4, iOS 26.4, *) {
             configAtoB = .init(source: aLang, target: bLang, preferredStrategy: .highFidelity)
@@ -95,7 +95,7 @@ final class TranslationCoordinator: ObservableObject {
             } catch {
                 failedCount += 1
                 consecutiveFailures += 1
-                // 오류 유형 계측 — Apple TranslationError 케이스별 문구 분기는 실측 후(규칙 1: 케이스 명세 미확인)
+                // 오류 유형 계측 — Apple TranslationError 케이스별 문구 분기는 실측 후(케이스 명세 미확인)
                 NSLog("VV translate: 실패 %d(연속 %d) — %@ [%@]", failedCount, consecutiveFailures,
                       error.localizedDescription, String(describing: type(of: error)))
                 if consecutiveFailures >= 3 { updateBanner() }

@@ -1,7 +1,7 @@
 import SwiftUI
 import Translation
 
-/// 라이브 세션 — 본문 전체를 자막에. "패널로 띄우기"로 팝아웃 (decisions.md §5·§6).
+/// 라이브 세션 — 본문 전체를 자막에. "패널로 띄우기"로 팝아웃.
 struct LiveSessionView: View {
     @EnvironmentObject var app: AppModel
     @EnvironmentObject var settings: PanelSettings
@@ -17,13 +17,13 @@ struct LiveSessionView: View {
         VStack(spacing: 0) {
             header
             if let msg = app.statusMessage { NoticeBanner(text: msg, color: Theme.accent, icon: "hourglass") }
-            // 온라인 미팅 조건부 배너 2종 (decisions §12 화면 게이트) — 스피커 이중 자막 경고 · 마이크 소프트 실패
+            // 온라인 미팅 조건부 배너 2종 — 스피커 이중 자막 경고 · 마이크 소프트 실패
             if app.speakerOutputActive, app.micCaptureOn, app.sessionState == .recording {
                 NoticeBanner(text: "스피커로 소리가 나는 중 — 내 발화가 중복 기록될 수 있어요. 이어폰·에어팟 사용을 권장합니다.",
                              color: Theme.warn, icon: "speaker.wave.2")
             }
             if let micMsg = app.micBannerText { NoticeBanner(text: micMsg, color: Theme.accent, icon: "mic.slash") }
-            // 녹음 저장 실패 — 녹음만 멈추고 자막은 계속(소프트 실패). decisions §14
+            // 녹음 저장 실패 — 녹음만 멈추고 자막은 계속(소프트 실패).
             if case .failed(let reason) = app.recordingStatus {
                 NoticeBanner(text: "녹음이 중단되었습니다 — \(reason) 자막과 녹취는 계속 기록되고 있어요.",
                              color: Theme.warn, icon: "waveform.slash")
@@ -49,7 +49,7 @@ struct LiveSessionView: View {
         }
     }
 
-    /// 세션 음원 녹음 상태 칩 — 소리로 확인할 수 없으므로 세션 내내 떠 있다(decisions §14 · 목업 컨펌).
+    /// 세션 음원 녹음 상태 칩 — 소리로 확인할 수 없으므로 세션 내내 떠 있다.
     /// 빨강(Theme.rec)은 이미 '세션 녹음 중' 점이 쓰고 있어 회피 — 평상시 중립, 실패했을 때만 경고색.
     @ViewBuilder private var recordChip: some View {
         if app.sessionState == .recording || app.sessionState == .paused {
@@ -77,7 +77,7 @@ struct LiveSessionView: View {
         }
     }
 
-    /// 타이핑 발화 입력바 — 말하기 어려울 때 타이핑으로 대화에 참여 (decisions.md §1-⑧).
+    /// 타이핑 발화 입력바 — 말하기 어려울 때 타이핑으로 대화에 참여.
     private var typeBar: some View {
         HStack(spacing: 9) {
             Image(systemName: "keyboard")
@@ -133,7 +133,7 @@ struct LiveSessionView: View {
                 .overlay(Capsule().stroke(Theme.hair))
             Spacer()
 
-            // "내 마이크" 토글 — 온라인 미팅 전용 (decisions §12 · 목업 컨펌 2026-07-24)
+            // "내 마이크" 토글 — 온라인 미팅 전용
             if app.dualCaptureSession {
                 Button { app.toggleMicCapture() } label: {
                     HStack(spacing: 6) {
@@ -154,7 +154,7 @@ struct LiveSessionView: View {
 
             recordChip
 
-            #if os(macOS)  // 팝아웃은 macOS 전용 — iPad 제외 (decisions §10)
+            #if os(macOS)  // 팝아웃은 macOS 전용 — iPad 제외
             Button { openWindow(id: "caption-popout") } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "pip.enter")
@@ -168,7 +168,7 @@ struct LiveSessionView: View {
             }.buttonStyle(.plain)
             #endif
 
-            // 진짜 버튼 (구 IconButton 이미지 → 상태 머신 배선, 워게임 '치명' 해소)
+            // 진짜 버튼 (구 IconButton 이미지 → 상태 머신 배선, 치명 결함 해소)
             Button { app.togglePause() } label: {
                 Image(systemName: app.sessionState == .paused ? "play.fill" : "pause.fill")
                     .font(.system(size: 11, weight: .semibold))
@@ -224,7 +224,7 @@ struct LiveSessionView: View {
                 fontButton("A＋") { settings.fontScale = min(1.8, settings.fontScale + 0.1) }
             }
 
-            if !app.hiddenSpeakerIndexes.isEmpty {   // 숨긴 화자 표시기 — 복구 경로 상시 확보(QC)
+            if !app.hiddenSpeakerIndexes.isEmpty {   // 숨긴 화자 표시기 — 복구 경로 상시 확보
                 Button {
                     app.hiddenSpeakerIndexes.removeAll()
                 } label: {
@@ -294,8 +294,8 @@ struct LiveClock: View {
     }
 }
 
-/// 입력 레벨 미터 — "소리를 받고 있다"는 시각 신호 (안전②). 칸 변화 시에만 갱신.
-/// 온라인 미팅은 2계통(🎤 마이크 파랑 · 시스템 초록) — 어느 쪽이 죽었는지 즉시 보임 (decisions §12).
+/// 입력 레벨 미터 — "소리를 받고 있다"는 시각 신호. 칸 변화 시에만 갱신.
+/// 온라인 미팅은 2계통(🎤 마이크 파랑 · 시스템 초록) — 어느 쪽이 죽었는지 즉시 보임.
 struct LiveMeter: View {
     @EnvironmentObject var app: AppModel
     var body: some View {
@@ -370,7 +370,7 @@ struct TranslationFailureBanner: View {
     }
 }
 
-/// 무음 경고 배너 (안전②)
+/// 무음 경고 배너
 struct SilenceBanner: View {
     @EnvironmentObject var app: AppModel
     var body: some View { Inner(app: app, metrics: app.metrics) }

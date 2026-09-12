@@ -1,31 +1,31 @@
 import SwiftUI
 
-/// 세션 상세 — 끝난 세션의 녹취록·회의록·내보내기 (decisions.md §5).
-/// 회의록은 여기의 "회의록" 탭에서 확인한다 (제작자 질문 2026-07-17 반영).
+/// 세션 상세 — 끝난 세션의 녹취록·회의록·내보내기.
+/// 회의록은 여기의 "회의록" 탭에서 확인한다.
 struct SessionDetailView: View {
     @EnvironmentObject var app: AppModel
     @EnvironmentObject var settings: PanelSettings
     @State private var tab: Tab = .transcript
     @State private var confirmDelete = false
     @State private var jumpTargetID: UUID?   // 근거 타임코드 칩 → 녹취록 해당 발화 점프·강조
-    @State private var showExport = false    // 내보내기 시트 (목업 — 파일 생성 로직은 컨펌 후)
-    @State private var editingTitle = false  // 제목 인라인 편집 (2026-07-18 제작자 지시 — 보관함서도 수정)
+    @State private var showExport = false    // 내보내기 시트
+    @State private var editingTitle = false  // 제목 인라인 편집 — 기록 보관함에서 연 세션도 수정 가능
     @State private var titleDraft = ""
     @FocusState private var titleFocused: Bool
     @State private var editingParticipant: String?   // 정정 중인 참여자(speakerLabel), nil=표시 (2026-07-18)
     @State private var participantDraft = ""
     @FocusState private var participantFocused: Bool
-    @State private var showRefined = true            // AI 재번역 토글 — 기본=AI 재번역(목업 컨펌 2026-07-23)
+    @State private var showRefined = true            // AI 재번역 토글 — 기본=AI 재번역
     @State private var hoveredLine: UUID?            // 호버 줄 — 원래 실시간 번역 취소선 노출
     @State private var recordings: [SessionRecorder.Item] = []   // 세션 음원 — 세션 전환 시에만 디스크 조회
-    @State private var speakerMenuLine: UUID?        // 화자 재지정 팝오버가 열린 줄 (2026-09-11 B②)
+    @State private var speakerMenuLine: UUID?        // 화자 재지정 팝오버가 열린 줄
     @State private var reassignWholeTrack = false    // 같은 분리 트랙의 모든 줄에 적용
     @State private var confirmRegenerate = false     // 회의록 다시 만들기 확인(.ready에서만 — 덮어쓰기 확인)
 
     enum Tab: String, CaseIterable {
         case transcript = "녹취록"
         case minutes = "회의록"
-        case retranscript = "재전사 대본"   // 녹음 재전사 결과가 있을 때만 노출(B④ · 거짓 탭 금지)
+        case retranscript = "재전사 대본"   // 녹음 재전사 결과가 있을 때만 노출 — 빈 탭을 만들지 않는다
     }
     private var visibleTabs: [Tab] {
         Tab.allCases.filter { $0 != .retranscript || app.selectedSession?.retranscript != nil }
@@ -76,7 +76,7 @@ struct SessionDetailView: View {
         }
     }
 
-    /// 세션 음원 — 녹음이 없으면 **행 자체가 없다**(비활성 버튼·'없음' 표기 금지 · 목업 컨펌 2026-07-30).
+    /// 세션 음원 — 녹음이 없으면 **행 자체가 없다**(비활성 버튼·'없음' 표기 금지).
     /// 녹음 기능 이전에 만들어진 세션이 자연스럽게 이 경우에 해당한다.
     @ViewBuilder private var recordingSection: some View {
         if !recordings.isEmpty {
@@ -123,8 +123,8 @@ struct SessionDetailView: View {
         }
     }
 
-    /// 종료 후 배치 작업 — 화자 다시 인식(B③) · 녹음 재전사(B④). 녹음이 있는 세션에서만(위 섹션 안).
-    /// 세션 진행 중·다른 배치 진행 중엔 비활성(공유 Whisper 파이프 경쟁 보호). 한계는 미리 고백(§3).
+    /// 종료 후 배치 작업 — 화자 다시 인식 · 녹음 재전사. 녹음이 있는 세션에서만(위 섹션 안).
+    /// 세션 진행 중·다른 배치 진행 중엔 비활성(공유 Whisper 파이프 경쟁 보호). 한계는 미리 고백한다.
     @ViewBuilder private var batchActions: some View {
         let sid = app.selectedSession?.id
         if let p = app.batchProgress {
@@ -215,7 +215,7 @@ struct SessionDetailView: View {
     }
 
     /// 세션 기록 조건 — 세션 중 열화 사유(마이크 실패·오디오 끊김·녹음 실패·번역 실패)와 구 세션 날짜 안내.
-    /// 라이브 배너로만 스쳐가던 정보를 기록에 남긴다(§3 정직 표기 · 2026-09-11 §15.3 ④⑥). 없으면 행 자체가 없다.
+    /// 라이브 배너로만 스쳐가던 정보를 기록에 남긴다(정직 표기 원칙). 없으면 행 자체가 없다.
     @ViewBuilder private func notesSection(_ session: Session?) -> some View {
         let notes = session?.notes ?? []
         let legacy = session?.isLegacyUndated ?? false
@@ -273,7 +273,7 @@ struct SessionDetailView: View {
                     }.buttonStyle(.plain).help("클릭해 이름 변경")
                 }
                 Text("\(session?.displayDate ?? "") · \(session?.pairShort ?? "") · \(session?.segments ?? 0)구간 · \(session?.duration ?? "")"
-                     + (session?.engineLabel.map { " · \($0)" } ?? ""))   // 어느 인식기였는지 — §14 분석 시 사후 판별
+                     + (session?.engineLabel.map { " · \($0)" } ?? ""))   // 어느 인식기였는지 — 사후 분석 시 판별용
                     .font(.system(size: 11.5)).foregroundStyle(Theme.ink3)
             }
             Spacer()
@@ -323,7 +323,7 @@ struct SessionDetailView: View {
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.hair).frame(height: 1) }
     }
 
-    // AI 재번역 상태 바 — 진행(n/N·취소)/실패 배너/완료 토글 (목업 `[2026-07-23]_retranslation_ui.html` 컨펌본)
+    // AI 재번역 상태 바 — 진행(n/N·취소)/실패 배너/완료 토글
     @ViewBuilder private func retransBar(_ session: Session?) -> some View {
         switch session?.refinement {
         case .refining:
@@ -353,7 +353,7 @@ struct SessionDetailView: View {
             .overlay(RoundedRectangle(cornerRadius: 11).stroke(Theme.hair))
             .padding(.horizontal, 22).padding(.top, 14)
         case .ready:
-            // 부분 실패 N/M — 스키마 손대지 않고 녹취록에서 파생(QC 조율 · 2026-09-11). 취소한 경우도 같은 수치가 정직하다.
+            // 부분 실패 N/M — 스키마 손대지 않고 녹취록에서 파생. 취소한 경우도 같은 수치가 정직하다.
             let lines = session?.transcript ?? []
             let total = lines.filter { !$0.source.isEmpty }.count
             let missing = total - lines.filter { $0.refinedTranslation != nil }.count
@@ -409,7 +409,7 @@ struct SessionDetailView: View {
                                 .font(.system(size: 10.5, design: .monospaced))
                                 .foregroundStyle(Theme.ink3)
                                 .padding(.top, 4)
-                            // 화자 칩 탭 → 재지정 팝오버(2026-09-11 B② — 저장 후 정정 경로 부재 해소, §3 "정정 UX 필수")
+                            // 화자 칩 탭 → 재지정 팝오버 — 저장 뒤에도 화자를 고칠 수 있는 유일한 경로(정정 UX 필수)
                             Button { reassignWholeTrack = false; speakerMenuLine = line.id } label: {
                                 SpeakerChip(speaker: line.speaker, uncertain: line.speakerUncertain)
                             }
@@ -511,7 +511,7 @@ struct SessionDetailView: View {
         .frame(minWidth: 260, alignment: .leading)
     }
 
-    /// 회의록 다시 만들기 버튼 — 재번역 진행 중엔 비활성(Gemma+FM 동시 상주 금지 · 워게임 §D)
+    /// 회의록 다시 만들기 버튼 — 재번역 진행 중엔 비활성(Gemma+FM 동시 상주 금지)
     private func regenerateButton(_ session: Session?, confirm: Bool) -> some View {
         Button {
             if confirm { confirmRegenerate = true } else if let id = session?.id { app.regenerateMinutes(sid: id) }
@@ -531,8 +531,8 @@ struct SessionDetailView: View {
         .help(session?.refinement == .refining ? "AI 재번역이 끝난 뒤 다시 만들 수 있어요" : "온디바이스 AI로 회의록을 새로 작성합니다")
     }
 
-    // 회의록 — 세션 정지 시 온디바이스 AI가 자동 작성 (레이아웃은 2026-07-17 목업 컨펌본).
-    // 참여 인원은 대화에서 추측 가능하면 자동 기록, 추측분은 '추정' 배지 (decisions.md §6).
+    // 회의록 — 세션 정지 시 온디바이스 AI가 자동 작성.
+    // 참여 인원은 대화에서 추측 가능하면 자동 기록한다.
     private var minutes: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -550,7 +550,7 @@ struct SessionDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 13).stroke(Theme.hair))
                 case .unavailable(let msg):
                     noticeCard(msg)
-                    regenerateButton(app.selectedSession, confirm: false)   // 실패·미가용의 유일한 재시도 경로(2026-09-11 B⑥)
+                    regenerateButton(app.selectedSession, confirm: false)   // 실패·미가용 상태의 유일한 재시도 경로
                 case .ready(let m):
                     if !m.participants.isEmpty {
                         minutesCard("참여 인원", icon: "person.2") {
@@ -642,7 +642,7 @@ struct SessionDetailView: View {
     }
 
     /// 신뢰도 표기 — 근거 타임코드 칩(탭=녹취록 근거 발화로 이동 · 로직 후속) + '확인 필요' 배지.
-    /// QC 규약: 근거 타임코드가 없는 항목은 자동으로 '확인 필요' — LLM이 근거 없이 만든 항목의 방어선.
+    /// 규약: 근거 타임코드가 없는 항목은 자동으로 '확인 필요' — LLM이 근거 없이 만든 항목의 방어선.
     @ViewBuilder
     private func trustMarks(sources: [String], needsCheck: Bool) -> some View {
         HStack(spacing: 5) {
@@ -674,9 +674,9 @@ struct SessionDetailView: View {
         .padding(.top, 1)
     }
 
-    /// 참여 인원 한 줄 — 화자 칩 + 이름(정정 가능). 배지 없음(2026-07-18 제작자 지시):
+    /// 참여 인원 한 줄 — 화자 칩 + 이름(정정 가능). 배지 없음:
     /// 이름을 못 맞힌 자리는 추정값(역할)을 기울임으로 시드해 보여주고, 클릭하면 인라인 편집
-    /// (세션 제목 편집과 같은 패턴 — 규칙 4). 정정하면 그 이름으로 저장, 별도 확정 표시 없음.
+    /// (세션 제목 편집과 같은 패턴). 정정하면 그 이름으로 저장, 별도 확정 표시 없음.
     @ViewBuilder
     private func participantRow(_ p: MeetingMinutes.Participant) -> some View {
         HStack(spacing: 9) {
@@ -736,7 +736,7 @@ struct SessionDetailView: View {
     }
 }
 
-/// 내보내기 시트 — 형식 4종 + 포함 옵션(§1-⑦ 토글 3종 + 회의록). 목업 단계: 파일 생성 로직은 컨펌 후.
+/// 내보내기 시트 — 형식 4종 + 포함 옵션(토글 3종 + 회의록).
 struct ExportSheet: View {
     let session: Session?
     @Environment(\.dismiss) private var dismiss
@@ -747,8 +747,8 @@ struct ExportSheet: View {
     @State private var includeSpeaker = true
     @State private var includeTranslation = true
     @State private var includeMinutes = true
-    @State private var useRefined = true   // 번역 = AI 재번역 우선(목업 컨펌 2026-07-23 · 기본 ON)
-    @State private var includeTranscript = true   // 끄면 회의록만 한 장으로(2026-09-11 B⑦)
+    @State private var useRefined = true   // 번역 = AI 재번역 우선(기본 ON)
+    @State private var includeTranscript = true   // 끄면 회의록만 한 장으로
     @State private var removeFillers = false      // 군말 제거 — 내보내기 전용·기본 OFF
 
     private var hasMinutes: Bool {
@@ -862,7 +862,7 @@ struct ExportSheet: View {
     }
 }
 
-/// Esc 취소 — onExitCommand는 macOS 전용. iPad는 미배선(Enter 저장·빈값 무시 경로만 — decisions §10 최소 적응).
+/// Esc 취소 — onExitCommand는 macOS 전용. iPad는 미배선(Enter 저장·빈값 무시 경로만 쓰는 최소 적응).
 private extension View {
     @ViewBuilder
     func onExitCancel(_ action: @escaping () -> Void) -> some View {

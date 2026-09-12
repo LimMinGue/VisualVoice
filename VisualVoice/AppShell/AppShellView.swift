@@ -1,7 +1,7 @@
-#if os(macOS)  // macOS 커스텀 셸 — iPad는 IPadShellView(NavigationSplitView)가 담당 (decisions §10)
+#if os(macOS)  // macOS 커스텀 셸 — iPad는 IPadShellView(NavigationSplitView)가 담당
 import SwiftUI
 
-/// 메인 창 셸 — 사이드바 + 본문(홈/라이브) (decisions.md §5).
+/// 메인 창 셸 — 사이드바 + 본문(홈/라이브).
 struct AppShellView: View {
     @EnvironmentObject var app: AppModel
     @EnvironmentObject var settings: PanelSettings
@@ -41,14 +41,14 @@ struct AppShellView: View {
         .foregroundStyle(Theme.ink)
         .frame(minWidth: 900, minHeight: 600)
         .background(Theme.bgMain)
-        // 메인 창 가림 감지 → 팝아웃 자동 표시(decisions §8 / wargame popout_auto_show)
+        // 메인 창 가림 감지 → 팝아웃 자동 표시
         .background(WindowEventObserver(onOcclusion: { app.mainWindowOccluded = $0 }))
         .onChange(of: app.mainWindowOccluded) { _, _ in syncPopout() }
         .onChange(of: app.sessionState) { _, _ in syncPopout() }
         .task { app.preheatDefaultLanguage() }   // 실행 즉시 기본 언어 모델 사전 설치+예열(백그라운드)
     }
 
-    /// 창 가림·세션 상태에 따라 팝아웃을 자동 표시/닫기 (승인된 조율안 — decisions §8).
+    /// 창 가림·세션 상태에 따라 팝아웃을 자동 표시/닫기.
     private func syncPopout() {
         let want = settings.autoShowPopout && app.sessionState == .recording
             && app.mainWindowOccluded && !app.popoutManuallyClosed

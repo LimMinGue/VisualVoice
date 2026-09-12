@@ -9,12 +9,21 @@ Copyright © 2026 LimMinGue. All rights reserved.
    기타 자료 일체)의 저작권과 그 밖의 지식재산권은 LimMinGue(이하 "저작권자")에게
    있습니다.
 
-2. 사용 허락. 저작권자는 사용자에게 이 소프트웨어를 저작권자가 배포한 형태
-   그대로 사용할 수 있는, 비독점적·양도 불가능한 권리를 부여합니다. 저작권자의
-   별도 서면 허락 없이 이 소프트웨어의 전부 또는 일부를 복제·재배포·판매·임대·
-   대여·수정·번역·역공학·디컴파일·2차 저작물 제작에 이용할 수 없습니다. 다만
-   관련 법령이 명시적으로 허용하는 범위(예: 상호운용성 확보를 위한 분석)는
-   예외로 합니다.
+2. 사용 허락(소스 공개형). 저작권자는 사용자에게 다음의 비독점적·양도 불가능한
+   권리를 부여합니다.
+
+   (가) 허용되는 것 — 개인적·비상업적 목적에 한하여, 이 저장소의 소스 코드를
+        내려받아 보관·열람하고, 본인이 관리하는 기기에서 빌드·설치·실행하며,
+        그 목적에 필요한 범위에서 수정(예: 코드 서명 설정 변경, 본인 환경에
+        맞춘 조정)할 수 있습니다. 학습·연구 목적의 열람과 분석도 허용됩니다.
+
+   (나) 금지되는 것 — 저작권자의 사전 서면 허락 없이 이 소프트웨어 또는 그
+        수정본·2차 저작물의 전부 또는 일부를 제3자에게 재배포·공개 배포·판매·
+        임대·대여할 수 없으며, 상업적 목적으로 이용할 수 없습니다. 저작권 표시와
+        본 사용권 계약을 제거하거나 변경할 수 없습니다.
+
+   (다) 위 (가)의 허용은 이 저장소에 포함되지 않는 제3자 구성 요소(제3조)와
+        언어 모델(Gemma)에는 적용되지 않으며, 각자의 약관이 우선합니다.
 
 3. 제3자 구성 요소. 이 소프트웨어에는 오픈 소스 구성 요소가 포함되어 있으며,
    각 구성 요소는 자체 라이선스를 따릅니다. 목록과 라이선스는 동봉된
@@ -46,12 +55,25 @@ Copyright © 2026 LimMinGue. All rights reserved.
    documentation, icons and other materials) belong to LimMinGue (the
    "Licensor").
 
-2. Grant. The Licensor grants you a non-exclusive, non-transferable right to use
-   this software in the form distributed by the Licensor. Without the Licensor's
-   prior written permission you may not copy, redistribute, sell, rent, lease,
-   modify, translate, reverse engineer, decompile or create derivative works of
-   this software, in whole or in part, except to the extent that applicable law
-   expressly permits (for example, analysis for interoperability).
+2. Grant (source-available). The Licensor grants you the following
+   non-exclusive, non-transferable rights.
+
+   (a) Permitted — For personal, non-commercial purposes you may download,
+       retain and read the source code in this repository; build, install and
+       run it on devices you control; and modify it to the extent needed for
+       that purpose (for example, changing the code-signing settings or
+       adapting it to your environment). Reading and analysis for study or
+       research is also permitted.
+
+   (b) Not permitted — Without the Licensor's prior written permission you may
+       not redistribute, publicly distribute, sell, rent or lease this software
+       or any modified version or derivative work of it, in whole or in part,
+       to third parties, nor use it for commercial purposes. You may not remove
+       or alter the copyright notice or this license agreement.
+
+   (c) The permission in (a) does not extend to the third-party components
+       referenced in Section 3 or to the language model (Gemma), which are not
+       included in this repository and remain governed by their own terms.
 
 3. Third-party components. This software contains open-source components,
    each governed by its own license. The list and license references are in

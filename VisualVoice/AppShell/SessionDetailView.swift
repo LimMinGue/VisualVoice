@@ -392,10 +392,22 @@ struct SessionDetailView: View {
     }
 
     // 녹취록 — 타임코드·화자 라벨 전체 표기 (상세 밀도). 근거 칩 점프 시 해당 발화로 스크롤·강조.
-    private var transcript: some View {
-        VStack(spacing: 0) {
-            retransBar(app.selectedSession)
-            transcriptScroll
+    @ViewBuilder private var transcript: some View {
+        if (app.selectedSession?.transcript ?? []).isEmpty {
+            // 녹취록이 없으면 예제 대화를 대신 그리지 않는다 — 지어낸 문장을 이 세션의 기록으로
+            // 오인하게 만든다. 귀로 재검증할 수 없는 사용자에게는 확인할 방법이 없는 거짓말이 된다.
+            // AI 재번역 바도 함께 숨긴다: 없는 녹취록을 조작하는 컨트롤이 되기 때문.
+            ScrollView {
+                noticeCard(recordings.isEmpty
+                    ? "이 세션에는 녹취록이 없습니다. 발화가 기록되지 않았거나 저장되기 전에 종료된 세션입니다."
+                    : "이 세션에는 녹취록이 없습니다. 저장된 녹음이 있으니 ‘이 녹음 다시 전사’로 대본을 만들 수 있습니다.")
+                    .padding(22)
+            }
+        } else {
+            VStack(spacing: 0) {
+                retransBar(app.selectedSession)
+                transcriptScroll
+            }
         }
     }
 
@@ -403,7 +415,7 @@ struct SessionDetailView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 15) {
-                    ForEach(app.selectedSession?.transcript ?? CaptionLine.sampleTranscript) { line in
+                    ForEach(app.selectedSession?.transcript ?? []) { line in
                         HStack(alignment: .top, spacing: 10) {
                             Text(line.timecode)
                                 .font(.system(size: 10.5, design: .monospaced))

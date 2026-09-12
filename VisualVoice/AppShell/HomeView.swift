@@ -34,8 +34,15 @@ struct HomeView: View {
                 Text("최근 세션")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.ink3).padding(.top, 2)
-                VStack(spacing: 2) {
-                    ForEach(Array(app.sessions.prefix(3))) { recentRow($0) }
+                VStack(alignment: .leading, spacing: 2) {
+                    if app.sessions.isEmpty {
+                        // 첫 실행 — 예제 세션을 지어내지 않는다. 제목만 덩그러니 남지 않게 안내 한 줄.
+                        Text("아직 저장된 세션이 없습니다. 위에서 대화를 시작하면 여기에 쌓입니다.")
+                            .font(.system(size: 12)).foregroundStyle(Theme.ink3)
+                            .padding(.vertical, 10)
+                    } else {
+                        ForEach(Array(app.sessions.prefix(3))) { recentRow($0) }
+                    }
                 }
             }
             .padding(22)

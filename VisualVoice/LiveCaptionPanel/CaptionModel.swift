@@ -130,7 +130,7 @@ struct CaptionLine: Identifiable, Codable {
     var clockEnd: Double? = nil
     /// 사용자가 직접 지정한 화자 — 라이브 backfill·배치 재계산이 덮어쓰지 않는다(조용한 고쳐쓰기 금지 · 2026-09-11).
     /// ⚠️ 저장은 Optional(`userSetFlag`)로 — 합성 Decodable은 `Bool = false` 기본값을 **쓰지 않고** 키 부재를 오류로 낸다.
-    /// (2026-09-11 실측: 이 필드를 Bool로 넣자 구 21건 로드가 통째로 실패해 샘플이 부활했다. Optional만 decodeIfPresent.)
+    /// (2026-09-11 실측: 이 필드를 Bool로 넣자 구 21건 로드가 통째로 실패했다. Optional만 decodeIfPresent.)
     var speakerIsUserSet: Bool {
         get { userSetFlag ?? false }
         set { userSetFlag = newValue }
@@ -142,70 +142,6 @@ struct CaptionLine: Identifiable, Codable {
         case fluidSpeaker, clockStart, clockEnd
         case userSetFlag = "speakerIsUserSet"
     }
-
-    /// 한↔인니 양방향 예시 (언어 쌍).
-    static let sampleLive: [CaptionLine] = [
-        .init(speaker: .me,
-              source: "자카르타 팀은 화요일 10시가 괜찮을까요?",
-              translation: "Apakah tim Jakarta oke dengan hari Selasa jam 10?",
-              timecode: "00:12:31"),
-        .init(speaker: .remote(1),
-              source: "Ya, jam 10 lebih baik untuk kami.",
-              translation: "네, 저희는 10시가 더 좋아요.",
-              timecode: "00:12:38"),
-        .init(speaker: .remote(1),
-              source: "Baik, saya akan kirim undangannya sekarang",
-              translation: "좋아요, 제가 지금 초대장을 보낼게요",
-              timecode: "00:12:47",
-              isVolatile: true),
-    ]
-
-    /// 한국어 단일(자막만) 예시 — 1순위 유스케이스: 같은 언어 대화의 청각 지원.
-    static let sampleKoreanOnly: [CaptionLine] = [
-        .init(speaker: .remote(1),
-              source: "지난주에 말씀하신 견적서 검토해 봤는데요.",
-              translation: "", timecode: "00:08:12"),
-        .init(speaker: .me,
-              source: "네, 어떤 부분이 걸리셨어요?",
-              translation: "", timecode: "00:08:18"),
-        .init(speaker: .remote(1),
-              source: "3번 항목 단가가 처음 얘기했던 것보다 높아서요. 이 부분 조정이 가능한지 확인 부탁드려요",
-              translation: "", timecode: "00:08:24",
-              isVolatile: true),
-    ]
-
-    /// 세션 상세 > 녹취록 탭 예시 (확정 발화만, 타임코드·화자 라벨 전체 표기).
-    static let sampleTranscript: [CaptionLine] = [
-        .init(speaker: .me,
-              source: "안녕하세요, 오늘 킥오프 일정 조율 때문에 연락드렸어요.",
-              translation: "Halo, saya menghubungi Anda untuk mengatur jadwal kickoff hari ini.",
-              timecode: "00:00:04"),
-        .init(speaker: .remote(1),
-              source: "Halo! Ya, kami sudah menunggu kabar dari Anda.",
-              translation: "안녕하세요! 네, 저희도 연락 기다리고 있었어요.",
-              timecode: "00:00:11"),
-        .init(speaker: .me,
-              source: "자카르타 팀은 화요일 10시가 괜찮을까요?",
-              translation: "Apakah tim Jakarta oke dengan hari Selasa jam 10?",
-              timecode: "00:12:31"),
-        .init(speaker: .remote(1),
-              source: "Ya, jam 10 lebih baik untuk kami.",
-              translation: "네, 저희는 10시가 더 좋아요.",
-              timecode: "00:12:38"),
-        .init(speaker: .remote(2),
-              source: "Kontrak drafnya sebaiknya kita review sebelum meeting.",
-              translation: "계약 초안은 미팅 전에 검토하는 게 좋겠어요.",
-              timecode: "00:14:02",
-              speakerUncertain: true),
-        .init(speaker: .me,
-              source: "좋습니다. 그럼 초대장은 그쪽에서 보내주시겠어요?",
-              translation: "Baik. Kalau begitu, bisakah undangannya dikirim dari pihak Anda?",
-              timecode: "00:15:19"),
-        .init(speaker: .remote(1),
-              source: "Tentu, saya akan kirim undangannya hari ini.",
-              translation: "물론이죠, 오늘 초대장을 보내드릴게요.",
-              timecode: "00:15:27"),
-    ]
 }
 
 /// AI 재번역 상태 — MinutesState 4-케이스 규약 복제(침묵 실패 금지).
@@ -255,25 +191,6 @@ struct Session: Identifiable, Codable {
         f.dateFormat = cal.isDate(d, equalTo: now, toGranularity: .year) ? "M. d HH:mm" : "yyyy. M. d HH:mm"
         return f.string(from: d)
     }
-
-    static let samples: [Session] = [
-        .init(title: "팀 킥오프 미팅", dateLabel: "오늘 14:20", pairShort: "한↔영",
-              segments: 42, duration: "12:47", dotColor: Theme.me,
-              preview: "그럼 다음 주 화요일에 킥오프 미팅을 잡을까요? — Tuesday works, but can we…",
-              createdAt: Date().addingTimeInterval(-3600)),
-        .init(title: "자카르타 파트너 콜", dateLabel: "어제 10:05", pairShort: "한↔인니",
-              segments: 28, duration: "24:10", dotColor: Theme.p1,
-              preview: "자카르타 팀은 화요일 10시가 괜찮을까요? — Ya, jam 10 lebih baik…",
-              createdAt: Date().addingTimeInterval(-86400)),
-        .init(title: "제품 리뷰 (대면)", dateLabel: "7. 15", pairShort: "한↔영",
-              segments: 51, duration: "33:02", dotColor: Theme.p2,
-              preview: "이 화면 흐름은 사용자가 헷갈릴 수 있어요 — Let's simplify the onboarding…",
-              createdAt: Date().addingTimeInterval(-86400 * 3)),
-        .init(title: "벤더 견적 협의", dateLabel: "7. 14", pairShort: "영↔인니",
-              segments: 19, duration: "15:38", dotColor: Theme.me,
-              preview: "Can you share the revised quote? — Tentu, saya kirim sekarang…",
-              createdAt: Date().addingTimeInterval(-86400 * 4)),
-    ]
 }
 
 /// 세션 영구 저장 — Application Support/VisualVoice/sessions.json (2026-07-17).
@@ -286,13 +203,13 @@ enum SessionStore {
         return dir.appendingPathComponent("sessions.json")
     }
 
-    /// 로드 실패 고지 — 셸 배너. (2026-09-11 실측: 스키마 실수 하나로 디코딩이 깨지자 샘플이 시드됐고,
-    /// 그 상태에서 무엇이든 바꾸면 샘플이 진짜 기록 21건을 **덮어쓸** 경로였다. 이제 실패하면 원본을 옆에 보존하고 빈 목록으로 시작한다.)
+    /// 로드 실패 고지 — 셸 배너. (2026-09-11 실측: 스키마 실수 하나로 디코딩이 깨지자 예제가 시드됐고,
+    /// 그 상태에서 무엇이든 바꾸면 진짜 기록 21건을 **덮어쓸** 경로였다. 이제 실패하면 원본을 옆에 보존하고 빈 목록으로 시작한다.)
     static var loadError: String?
 
     static func load() -> [Session]? {
-        // 파일이 없으면 최초 실행 → nil(샘플 시드). 파일이 있으면 빈 배열이어도 그대로 존중 —
-        // 전부 삭제 후 []가 저장됐을 때 재실행하면 샘플이 부활하던 버그 수정 (2026-07-18).
+        // 파일이 없으면 최초 실행 → nil(호출부가 빈 목록을 유지). 파일이 있으면 빈 배열이어도 그대로 존중.
+        // 예제 세션은 시드하지 않는다 — 지어낸 기록을 사용자 기록과 구분할 단서가 없다(2026-09-12).
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         guard let data = try? Data(contentsOf: url) else {
             loadError = "저장된 세션 기록 파일을 읽지 못했습니다 — 기록은 지우지 않았습니다."
@@ -387,7 +304,7 @@ final class AppModel: ObservableObject {
               let b = AppLanguage.all.first(where: { $0.code == codes[1] }) else { return .koOnly }
         return LanguagePair(a: a, b: b)
     }
-    @Published var sessions = Session.samples {
+    @Published var sessions: [Session] = [] {
         didSet {   // 삽입·삭제·회의록 갱신 모두 즉시 영구화 — 쓰기 실패는 배너로(침묵 실패 금지, 2026-09-11)
             let err = SessionStore.save(sessions)
             if err != saveError { Task { @MainActor in self.saveError = err } }   // didSet 안 @Published 직접 쓰기 회피
@@ -400,8 +317,8 @@ final class AppModel: ObservableObject {
     private var sessionUsesWhisper = false
     private var audioKicks = 0                    // 오디오 끊김 에피소드 수 — notes용
     private var audioBroken = false
-    @Published var liveTitle = "자카르타 파트너 콜"
-    @Published var liveLines = CaptionLine.sampleLive
+    @Published var liveTitle = ""                 // start()에서 캡처 모드 이름으로 채운다
+    @Published var liveLines: [CaptionLine] = []
     @Published var selectedSession: Session?
 
     // 라이브 세션 상태 (저주파 — 화면 전환·상태 변화만)
@@ -430,7 +347,7 @@ final class AppModel: ObservableObject {
     let translator = TranslationCoordinator()
 
     init() {
-        // 저장분 복원 — 없으면 샘플(최초 실행 시드).
+        // 저장분 복원 — 파일이 없으면(최초 실행) 빈 목록 그대로 둔다.
         // 녹음 고아 청소는 **복원에 성공했을 때만** — 실패 상태에서 돌리면 살아 있는 녹음을 전량 지운다
         // (세션이 폐기·삭제된 뒤 남은 파일과 크래시 잔재를 한 번에 정리).
         if let saved = SessionStore.load() { sessions = saved }
